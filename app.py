@@ -6,7 +6,7 @@ import logging
 import time
 import torch
 from transformers import pipeline, BlipProcessor, BlipForConditionalGeneration
-from llm.text_to_ui_color_palet import get_colors_from_text
+from llm.text_to_ui_color_palet import get_colors_and_types_from_text
 app = Flask(__name__)
 
 # Set up logging
@@ -99,7 +99,7 @@ def text_to_color():
         if not text:
             return jsonify({'error': 'text is required'}), 400
 
-        color_palet = get_colors_from_text(text)
+        color_palet = get_colors_and_types_from_text(text)
 
         logging.info("Generated color palette: %s", color_palet)
 

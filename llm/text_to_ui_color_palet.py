@@ -2,6 +2,19 @@ import json
 from gliclass import GLiClassModel, ZeroShotClassificationPipeline
 from transformers import AutoTokenizer
 
+types = [
+    "Main color",
+    "Secondary color",
+    "Text color",
+    "Highlight color",
+    "Accent color",
+    "Notification highlight color",
+    "Subtle background color",
+    "Border color",
+    "Alert color",
+    "Divider color"
+]
+
 file_path = 'datasets/color-names-100.json'
 
 # Read and parse the JSON file
@@ -11,36 +24,56 @@ with open(file_path, 'r') as file:
 # Extract values to an array
 color_names = list(color_dict.values())
 
+# Create combined labels
+combined_labels = [f"{color} - {type}" for color in color_names for type in types]
+
 model = GLiClassModel.from_pretrained("knowledgator/gliclass-small-v1.0-lw")
 tokenizer = AutoTokenizer.from_pretrained("knowledgator/gliclass-small-v1.0-lw")
 
 pipeline = ZeroShotClassificationPipeline(model, tokenizer, classification_type='multi-label', device='cuda:0')
 
-def get_colors_from_text(text, top_k=10):
+def get_colors_and_types_from_text(text, top_k=10):
     # Perform classification
-    result = pipeline(text, color_names, threshold=0.5)
-    
-    # Debug prints to check the structure of the result
+    result = pipeline(text, combined_labels, threshold=0.5)
+
+    # Debug print to check the structure of the result
     print("Pipeline Result:", result)
 
-    # Ensure the result is not empty and is a list
+    # Ensure the result is not empty and is a dictionary
     if not result or not isinstance(result, list):
-        return []
-
-    # Access the first element of the result list
-    classification_result = result[0]
-
-    # Ensure the first element is a list of dictionaries with 'label' and 'score' keys
-    if not classification_result or not isinstance(classification_result, list):
-        return []
+        print("Empty or invalid result")
+        return json.dumps({"color_palet": []})
 
     # Extract labels and scores
-    labels = [item['label'] for item in classification_result]
-    scores = [item['score'] for item in classification_result]
+    labels = [item['label'] for item in result[0]]
+    scores = [item['score'] for item in result[0]]
 
-    # Combine labels and scores into a list of tuples and sort by score
-    sorted_result = sorted(zip(labels, scores), key=lambda x: x[1], reverse=True)
-    
-    # Select the top_k colors
-    top_colors = sorted_result[:top_k]
-    return top_colors
+    # Combine labels and scores into a list of tuples
+    combined_results = list(zip(labels, scores))
+
+    # Create a dictionary to hold the highest score for each type
+    best_per_type = {type: (None, 0) for type in types}
+
+    # Create a set to track unique colors
+    unique_colors = set()
+
+    # Iterate over combined results to find the highest score for each type
+    for label, score in combined_results:
+        color, type = label.split(" - ")
+        if score > best_per_type[type][1] and color not in unique_colors:
+            best_per_type[type] = (color, score)
+            unique_colors.add(color)
+
+    # Create a list of the best results per type
+    top_colors_and_types = [{"color": color, "type": type, "score": score} for type, (color, score) in best_per_type.items() if color is not None]
+
+    # Sort the final results by score in descending order
+    top_colors_and_types = sorted(top_colors_and_types, key=lambda x: x['score'], reverse=True)
+
+    # Ensure only one color per type and top 10 unique colors
+    top_colors_and_types = top_colors_and_types[:top_k]
+
+    # Debug print to check the final result
+    print("Top Colors and Types:", top_colors_and_types)
+
+    return json.dumps(top_colors_and_types, indent=4)
