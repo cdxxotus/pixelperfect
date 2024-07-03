@@ -1,0 +1,21 @@
+{
+    "#FFFFFF": "White",
+    "#000000": "Black",
+    "#007BFF": "Blue",
+    "#28A745": "Green",
+    "#DC3545": "Red",
+    "#FFC107": "Yellow",
+    "#17A2B8": "Cyan",
+    "#6C757D": "Gray",
+    "#6610F2": "Purple",
+    "#FD7E14": "Orange",
+    "#20C997": "Teal",
+    "#E83E8C": "Pink",
+    "#343A40": "Dark Gray",
+    "#F8F9FA": "Light Gray",
+    "#FF5733": "Bright Orange",
+    "#C70039": "Deep Red",
+    "#900C3F": "Dark Red",
+    "#DAF7A6": "Light Green",
+    "#581845": "Dark Purple"
+}

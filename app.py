@@ -6,7 +6,7 @@ import logging
 import time
 import torch
 from transformers import pipeline, BlipProcessor, BlipForConditionalGeneration
-
+from llm.text_to_ui_color_palet import get_colors_from_text
 app = Flask(__name__)
 
 # Set up logging
@@ -64,14 +64,50 @@ def predict():
 
 @app.route('/get_home_screen_description', methods=['POST'])
 def describe_ui():
+    start_time = time.time()  # Start measuring inference time
+
     try:
         # Generate text for UI description
-        prompt = "As EleutherAI, i want your today OS home screen to be:"
+        prompt = "As EleutherAI, I want your today's OS home screen to be:"
         generated_text = generator(prompt, do_sample=True, min_length=10, max_length=100)[0]['generated_text']
 
         logging.info("Generated UI description: %s", generated_text)
 
+        end_time = time.time()  # End measuring inference time
+        inference_time = end_time - start_time
+        logging.info(f"Inference time: {inference_time:.2f} seconds")
+
         return jsonify({'os_home_screen_description': generated_text})
+
+    except Exception as e:
+        logging.error("Error processing request: %s", e)
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/get_colors_from_text', methods=['POST'])
+def text_to_color():
+    start_time = time.time()  # Start measuring inference time
+
+    try:
+        data = request.json
+        logging.info("Received data for text to color: %s", data)
+
+        if not data:
+            return jsonify({'error': 'No data received'}), 400
+
+        text = data.get('text')
+
+        if not text:
+            return jsonify({'error': 'text is required'}), 400
+
+        color_palet = get_colors_from_text(text)
+
+        logging.info("Generated color palette: %s", color_palet)
+
+        end_time = time.time()  # End measuring inference time
+        inference_time = end_time - start_time
+        logging.info(f"Inference time: {inference_time:.2f} seconds")
+
+        return jsonify({'color_palet': color_palet, 'inference_time': inference_time})
 
     except Exception as e:
         logging.error("Error processing request: %s", e)

@@ -12,8 +12,6 @@ let previousChanges = []
 let currentBase64Img = null
 const REGION_SIZE = 300
 
-getHomeScreenDescription()
-
 const createWindow = () => {
   win = new BrowserWindow({
     fullscreen: true, // Enable full-screen mode
@@ -174,9 +172,36 @@ async function getHomeScreenDescription() {
     const response = await axios.post(
       "http://localhost:5000/get_home_screen_description"
     )
-    const decision = response.data.response.os_home_screen_description
-    console.log("Home screen:", decision)
+    const osDescription = response.data.os_home_screen_description
+    console.log("Home screen description:", osDescription)
+    return osDescription
   } catch (error) {
-    console.error("Error getting UX decision:", error)
+    console.error("Error getting home screen description:", error)
   }
 }
+
+async function getColorPalet(osDescription) {
+  try {
+    const response = await axios.post(
+      "http://localhost:5000/get_colors_from_text",
+      {
+        text: osDescription,
+      }
+    )
+    const colorPalette = response.data
+    console.log("Color palette:", colorPalette)
+    return colorPalette
+  } catch (error) {
+    console.error("Error getting color palette:", error)
+  }
+}
+
+const init = async () => {
+  const osDescription = await getHomeScreenDescription()
+  if (osDescription) {
+    const colorPalette = await getColorPalet(osDescription)
+    console.log("Final color palette:", colorPalette)
+  }
+}
+
+init()
