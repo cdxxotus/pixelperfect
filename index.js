@@ -1,11 +1,15 @@
 const { app, BrowserWindow } = require("electron")
 const robot = require("robotjs")
+const { createCanvas } = require("canvas")
+const path = require("path")
 
+let win
 const createWindow = () => {
-  const win = new BrowserWindow({
+  win = new BrowserWindow({
     width: 800,
     height: 600,
     webPreferences: {
+      preload: path.join(__dirname, "preload.js"),
       nodeIntegration: true,
       contextIsolation: false,
     },
@@ -21,7 +25,24 @@ app.whenReady().then(() => {
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
+
+  const { width, height } = win.getBounds()
+  const base64Image = generateWhiteImage(width, height)
+
+  // Send the base64 image to the renderer process
+  win.webContents.on("did-finish-load", () => {
+    win.webContents.send("base64-image", base64Image)
+  })
 })
+
+// Function to generate a white image
+function generateWhiteImage(width, height) {
+  const canvas = createCanvas(width, height)
+  const context = canvas.getContext("2d")
+  context.fillStyle = "#FFFFFF"
+  context.fillRect(0, 0, width, height)
+  return canvas.toDataURL("image/png").split(",")[1]
+}
 
 // Periodically check mouse position
 setInterval(() => {

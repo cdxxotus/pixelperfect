@@ -13,6 +13,7 @@
     "electron-rebuild": "^3.2.9"
   },
   "dependencies": {
+    "canvas": "^2.11.2",
     "robotjs": "^0.6.0"
   }
 }
