@@ -1,10 +1,18 @@
 const { app, BrowserWindow, ipcMain } = require("electron")
 const robot = require("robotjs")
-const { createCanvas } = require("canvas")
+const { createCanvas, Image } = require("canvas")
 const path = require("path")
+const axios = require("axios")
 
 let win
 const NUM_PIXELS_TO_CHANGE = 1000
+const INITIAL_COLOR = "#FFFFFF"
+let pixelMap = []
+let previousChanges = []
+let currentBase64Img = null
+const REGION_SIZE = 300
+
+getHomeScreenDescription()
 
 const createWindow = () => {
   win = new BrowserWindow({
@@ -30,48 +38,121 @@ app.whenReady().then(() => {
   let context = canvas.getContext("2d")
 
   // Initialize the canvas with a white background
-  context.fillStyle = "#FFFFFF"
+  context.fillStyle = INITIAL_COLOR
   context.fillRect(0, 0, width, height)
+
+  // Initialize the pixel map
+  for (let y = 0; y < height; y++) {
+    pixelMap[y] = []
+    for (let x = 0; x < width; x++) {
+      pixelMap[y][x] = {
+        color: INITIAL_COLOR,
+        changeColor: (color) => {
+          context.fillStyle = color
+          context.fillRect(x, y, 1, 1)
+          pixelMap[y][x].color = color
+        },
+      }
+    }
+  }
 
   // Function to update and stream the canvas
   const updateAndStreamCanvas = () => {
-    // Clear the canvas
-    context.fillStyle = "#FFFFFF"
-    context.fillRect(0, 0, width, height)
+    console.log("Updating and streaming canvas...")
 
     // Generate a random color for this frame
     const color = getRandomColor()
-    context.fillStyle = color
+    console.log("Generated color:", color)
 
-    // Randomly choose a starting point
-    const startX = Math.floor(Math.random() * width)
-    const startY = Math.floor(Math.random() * height)
-
-    // Draw a block of pixels next to each other
-    for (let i = 0; i < NUM_PIXELS_TO_CHANGE; i++) {
-      const x = (startX + i) % width
-      const y = startY + Math.floor((startX + i) / width)
-      if (y < height) {
-        context.fillRect(x, y, 1, 1)
+    // If no previous changes, initialize with random starting point
+    if (previousChanges.length === 0) {
+      const startX = Math.floor(Math.random() * width)
+      const startY = Math.floor(Math.random() * height)
+      console.log("Initial start coordinates:", { startX, startY })
+      for (let i = 0; i < NUM_PIXELS_TO_CHANGE; i++) {
+        const x = (startX + i) % width
+        const y = startY + Math.floor((startX + i) / width)
+        if (y < height) {
+          pixelMap[y][x].changeColor(color)
+          previousChanges.push({ x, y })
+        }
       }
+    } else {
+      // Change colors based on previous changes
+      let newChanges = []
+      for (
+        let i = 0;
+        i < previousChanges.length && newChanges.length < NUM_PIXELS_TO_CHANGE;
+        i++
+      ) {
+        const { x, y } = previousChanges[i]
+        const directions = [
+          { dx: 1, dy: 0 },
+          { dx: -1, dy: 0 },
+          { dx: 0, dy: 1 },
+          { dx: 0, dy: -1 },
+        ]
+        for (const { dx, dy } of directions) {
+          const newX = (x + dx + width) % width
+          const newY = (y + dy + height) % height
+          if (
+            pixelMap[newY][newX].color === INITIAL_COLOR &&
+            newChanges.length < NUM_PIXELS_TO_CHANGE
+          ) {
+            pixelMap[newY][newX].changeColor(color)
+            newChanges.push({ x: newX, y: newY })
+          }
+        }
+      }
+      previousChanges = newChanges
     }
 
     // Stream the updated canvas to the renderer process
-    const base64Image = canvas.toDataURL("image/png").split(",")[1]
-    win.webContents.send("base64-image", base64Image)
+    currentBase64Img = canvas.toDataURL("image/png").split(",")[1]
+    console.log("Streaming updated canvas image...")
+    win.webContents.send("base64-image", currentBase64Img)
   }
 
-  // Event listeners for mouse movement and clicks
+  // Function to capture a 300px x 300px region around the cursor from the canvas
+  const captureRegionAroundCursor = (mouse) => {
+    const x = Math.max(0, mouse.x - REGION_SIZE / 2)
+    const y = Math.max(0, mouse.y - REGION_SIZE / 2)
+
+    const regionCanvas = createCanvas(REGION_SIZE, REGION_SIZE)
+    const regionContext = regionCanvas.getContext("2d")
+
+    // Draw the region from the main canvas to the region canvas
+    regionContext.drawImage(
+      canvas,
+      x,
+      y,
+      REGION_SIZE,
+      REGION_SIZE,
+      0,
+      0,
+      REGION_SIZE,
+      REGION_SIZE
+    )
+
+    return regionCanvas.toDataURL("image/png").split(",")[1]
+  }
+
+  // Event listeners for mouse movement
   let prevMouse = robot.getMousePos()
   setInterval(() => {
     const mouse = robot.getMousePos()
     if (mouse.x !== prevMouse.x || mouse.y !== prevMouse.y) {
+      console.log("Mouse moved to:", mouse)
       updateAndStreamCanvas()
       prevMouse = mouse
     }
   }, 1000 / 70)
 
+  setTimeout(() => {}, 3 * 1000)
+
+  // Event listener for mouse clicks
   ipcMain.on("mouse-click", () => {
+    console.log("Mouse click detected")
     updateAndStreamCanvas()
   })
 
@@ -86,4 +167,16 @@ function getRandomColor() {
   const g = Math.floor(Math.random() * 256)
   const b = Math.floor(Math.random() * 256)
   return `rgb(${r}, ${g}, ${b})`
+}
+
+async function getHomeScreenDescription() {
+  try {
+    const response = await axios.post(
+      "http://localhost:5000/get_home_screen_description"
+    )
+    const decision = response.data.response.os_home_screen_description
+    console.log("Home screen:", decision)
+  } catch (error) {
+    console.error("Error getting UX decision:", error)
+  }
 }

@@ -22,19 +22,11 @@
   <script>
     const imgElement = document.getElementById("streamed-image");
 
-    window.electron.onInitializeCanvas((base64Image) => {
-      imgElement.src = `data:image/png;base64,${base64Image}`;
-    });
-
     window.electron.onBase64Image((base64Image) => {
       imgElement.src = `data:image/png;base64,${base64Image}`;
     });
 
-    document.addEventListener('mousemove', (event) => {
-      window.electron.sendMouseMove({ x: event.clientX, y: event.clientY });
-    });
-
-    document.addEventListener('click', () => {
+    document.addEventListener("click", () => {
       window.electron.sendMouseClick();
     });
   </script>
