@@ -5,6 +5,7 @@ import io
 import logging
 import time
 import torch
+import json
 from transformers import pipeline, BlipProcessor, BlipForConditionalGeneration
 from llm.text_to_ui_color_palet import get_colors_and_types_from_text
 app = Flask(__name__)
@@ -107,7 +108,7 @@ def text_to_color():
         inference_time = end_time - start_time
         logging.info(f"Inference time: {inference_time:.2f} seconds")
 
-        return jsonify({'color_palet': color_palet, 'inference_time': inference_time})
+        return json.dumps({"color_palet": color_palet, 'inference_time': inference_time}, indent=4)
 
     except Exception as e:
         logging.error("Error processing request: %s", e)

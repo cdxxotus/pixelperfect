@@ -76,4 +76,4 @@ def get_colors_and_types_from_text(text, top_k=10):
     # Debug print to check the final result
     print("Top Colors and Types:", top_colors_and_types)
 
-    return json.dumps(top_colors_and_types, indent=4)
+    return top_colors_and_types
