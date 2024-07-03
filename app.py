@@ -4,27 +4,17 @@ import base64
 import io
 import logging
 import time
-import torch
 import json
-from transformers import pipeline, BlipProcessor, BlipForConditionalGeneration
 from llm.text_to_ui_color_palet import get_colors_and_types_from_text
+from llm.invent_text_from_image import invent_text_from_image
+from llm.get_home_screen_description import get_home_screen_description
+
 app = Flask(__name__)
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 
-# Initialize text generation pipeline
-generator = pipeline('text-generation', model='EleutherAI/gpt-neo-125M')
-
-# Load the BLIP model
-model_id = "Salesforce/blip-vqa-base"
-processor = BlipProcessor.from_pretrained(model_id)
-# Enable GPU/MPS device if available
-device = "cuda" if torch.cuda.is_available() else "cpu"
-device = "mps" if torch.backends.mps.is_available() else "cpu"
-model = BlipForConditionalGeneration.from_pretrained(model_id).half().to(device)
-
-@app.route('/predict', methods=['POST'])
+@app.route('/invent_text_from_image', methods=['POST'])
 def predict():
     start_time = time.time()  # Start measuring inference time
 
@@ -39,17 +29,9 @@ def predict():
 
         # Process the image
         image = Image.open(io.BytesIO(base64.b64decode(image_data)))
-        optimized_size = (150, 150)
-        image = image.resize(optimized_size)
-        images = [image]
-
-        inputs = processor(images=images, return_tensors="pt").to(device)
-
-        with torch.inference_mode():  # Even better for inference optimization
-            outputs = model.generate(**inputs, max_length=50, num_beams=1, do_sample=False)
 
         # Decode the generated tokens
-        generated_texts = processor.batch_decode(outputs, skip_special_tokens=True)
+        generated_texts = invent_text_from_image(image)
 
         logging.info("Generated responses: %s", generated_texts)
 
@@ -57,7 +39,7 @@ def predict():
         inference_time = end_time - start_time
         logging.info(f"Inference time: {inference_time:.2f} seconds")
 
-        return jsonify({'response': generated_texts, 'inference_time': inference_time})
+        return jsonify({'text': generated_texts, 'inference_time': inference_time})
 
     except Exception as e:
         logging.error("Error processing request: %s", e)
@@ -68,9 +50,7 @@ def describe_ui():
     start_time = time.time()  # Start measuring inference time
 
     try:
-        # Generate text for UI description
-        prompt = "As EleutherAI, I want your today's OS home screen to be:"
-        generated_text = generator(prompt, do_sample=True, min_length=10, max_length=100)[0]['generated_text']
+        generated_text = get_home_screen_description()
 
         logging.info("Generated UI description: %s", generated_text)
 
@@ -78,7 +58,7 @@ def describe_ui():
         inference_time = end_time - start_time
         logging.info(f"Inference time: {inference_time:.2f} seconds")
 
-        return jsonify({'os_home_screen_description': generated_text})
+        return json.dumps({'os_home_screen_description': generated_text, 'inference_time': inference_time}, indent=4)
 
     except Exception as e:
         logging.error("Error processing request: %s", e)
