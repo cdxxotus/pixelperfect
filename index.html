@@ -4,14 +4,38 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Image Stream</title>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+    #streamed-image {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+  </style>
 </head>
 <body>
   <img id="streamed-image" src="" alt="Streamed Image" />
   <script>
     const imgElement = document.getElementById("streamed-image");
 
+    window.electron.onInitializeCanvas((base64Image) => {
+      imgElement.src = `data:image/png;base64,${base64Image}`;
+    });
+
     window.electron.onBase64Image((base64Image) => {
       imgElement.src = `data:image/png;base64,${base64Image}`;
+    });
+
+    document.addEventListener('mousemove', (event) => {
+      window.electron.sendMouseMove({ x: event.clientX, y: event.clientY });
+    });
+
+    document.addEventListener('click', () => {
+      window.electron.sendMouseClick();
     });
   </script>
 </body>
