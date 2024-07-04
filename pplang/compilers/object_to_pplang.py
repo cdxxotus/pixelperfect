@@ -136,9 +136,7 @@ def uncompile(compiled_str):
     is_escaped = False
     schema=[]
     current_operation=""
-    previous_operation=""
     x_schema = 0
-    x_array=0
     x_object=0
 
     for char in char_gen:
@@ -146,13 +144,10 @@ def uncompile(compiled_str):
             # Set escape flag
             is_escaped = True
         elif char == '$' and is_escaped == False:
-            previous_operation=current_operation
             current_operation="$"
         elif char=="[" and is_escaped==False:
-            x_array = 0;
             x_object=0
             decoded_data = f"{decoded_data}{char}"
-            previous_operation=current_operation
             current_operation="[{"
         elif (char == ',') and is_escaped==False:
             decoded_data = f"{decoded_data}{char}"
@@ -162,14 +157,12 @@ def uncompile(compiled_str):
             else:
                 decoded_data = f"{decoded_data}{char}"
             x_object = 0
-            x_array=0
         elif char == '|' and is_escaped==False:
             if current_operation=="{":
                 decoded_data = f"{decoded_data}{'}'},{'{'}"
             else:
                 decoded_data = f"{decoded_data}],["
             x_object=0
-            previous_operation=current_operation
             current_operation = "{"
         else:
             # Convert Unicode character to its index
@@ -181,28 +174,26 @@ def uncompile(compiled_str):
                 schema_name=schema_list_pointers_names[pos]
                 raw_schema=get_pointer_names(schema_name)[0]
                 schema = parse_schema(raw_schema)
-                previous_operation=current_operation
                 current_operation=""
             elif len(current_operation) == 2 and f"{current_operation[0]}{current_operation[1]}" == "[{":
                 key=list(schema[0].keys())[x_object]
-                pointer_name=get_pointer_names(key)[pos]
-                decoded_data = f"{decoded_data}{'{'}\"{schema[0][key]}\":\"{pointer_name}\""
+                if char=="-":
+                    decoded_data = f"{decoded_data}{'{'}\"{schema[0][key]}\":null"
+                else:
+                    pointer_name=get_pointer_names(key)[pos]
+                    decoded_data = f"{decoded_data}{'{'}\"{schema[0][key]}\":\"{pointer_name}\""
                 x_object=1
-                previous_operation=current_operation
                 current_operation = "{"
             elif len(current_operation) == 1 and f"{current_operation[0]}" == "{":
-                keys=list(schema[0].keys())
                 key=list(schema[0].keys())[x_object]
-                pointer_name=get_pointer_names(key)[pos]
-                decoded_data = f"{decoded_data}\"{schema[0][key]}\":\"{pointer_name}\""
+                if char=="-":
+                    decoded_data = f"{decoded_data}\"{schema[0][key]}\":null"
+                else:
+                    pointer_name=get_pointer_names(key)[pos]
+                    decoded_data = f"{decoded_data}\"{schema[0][key]}\":\"{pointer_name}\""
                 x_object=x_object+1
 
-
-
     decoded_data = ''.join(decoded_data)
-
-    # Replace symbols with appropriate delimiters
-    decoded_data = decoded_data.replace('|', '],[').replace('[', '[[').replace(']', ']]').replace('-', 'None')
 
     # Convert string back to list
     try:
