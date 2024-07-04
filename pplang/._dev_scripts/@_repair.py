@@ -1,9 +1,9 @@
-import re
 import os
 import shutil
 from collections import defaultdict
 from datetime import datetime
 import random
+import re
 
 # Function to create a backup of the file
 def create_backup(file_path):
@@ -115,8 +115,9 @@ def handle_duplicates_list_all(emoji_dict, line_indices_dict):
     emoji_dict[selected_emoji] = texts
     return emoji_dict, line_indices_to_delete
 
-# Function to list translations that could be faux-amis and handle edit/add/delete
-def handle_faux_amis(emoji_dict, line_indices_dict):
+# Function to handle duplicates and faux-amis based on the chosen method
+def handle_duplicates_and_faux_amis(emoji_dict, line_indices_dict):
+    duplicates = {emoji: texts for emoji, texts in emoji_dict.items() if len(set(texts)) < len(texts)}
     all_translations = defaultdict(list)
 
     # Collect all translations and their corresponding emojis
@@ -124,62 +125,33 @@ def handle_faux_amis(emoji_dict, line_indices_dict):
         for text in texts:
             all_translations[text].append(emoji)
 
-    # Filter translations that have multiple corresponding emojis
     faux_amis_candidates = {text: emojis for text, emojis in all_translations.items() if len(emojis) > 1}
 
-    if not faux_amis_candidates:
-        print("No faux-amis candidates found.")
+    if not duplicates and not faux_amis_candidates:
+        print("No duplicates or faux-amis found.")
         return emoji_dict, []
 
-    print("Faux-amis candidates:")
-    for idx, text in enumerate(faux_amis_candidates):
-        print(f"{idx}: {text}")
+    lines_to_delete = []
 
-    choice = input("Enter the ID of the translation to edit, add, or delete from its unicode parent (or 'back' to go back): ").strip().lower()
-    if choice == 'back':
-        return emoji_dict, []
+    # Handle duplicates
+    for emoji, texts in duplicates.items():
+        print(f"\nDuplicate translations found for {emoji}:")
+        updated_texts, line_indices_to_delete = handle_duplicates_one_by_one(emoji, texts, line_indices_dict[emoji])
+        emoji_dict[emoji] = updated_texts
+        lines_to_delete.extend(line_indices_to_delete)
 
-    selected_text = list(faux_amis_candidates.keys())[int(choice)]
-    associated_emojis = faux_amis_candidates[selected_text]
+    # Handle faux-amis
+    for text, emojis in faux_amis_candidates.items():
+        print(f"\nFaux-amis found for translation '{text}' associated with emojis {emojis}:")
+        for emoji in emojis:
+            texts = emoji_dict[emoji]
+            line_indices = line_indices_dict[emoji]
+            updated_texts, line_indices_to_delete = handle_duplicates_one_by_one(emoji, texts, line_indices)
+            emoji_dict[emoji] = updated_texts
+            lines_to_delete.extend(line_indices_to_delete)
 
-    print(f"\nThe translation '{selected_text}' is associated with the following emojis:")
-    for idx, emoji in enumerate(associated_emojis):
-        print(f"{idx}: {emoji}")
+    return emoji_dict, lines_to_delete
 
-    emoji_choice = int(input("Enter the ID of the emoji you want to modify: "))
-    selected_emoji = associated_emojis[emoji_choice]
-    texts = emoji_dict[selected_emoji]
-    line_indices = line_indices_dict[selected_emoji]
-    line_indices_to_delete = []
-
-    while True:
-        action = input("Choose action: (delete/add/edit/done/auto-repair/back/save): ").strip().lower()
-        if action == 'back':
-            break
-        if action == 'save':
-            save_changes = input("Do you want to save changes? (yes/no): ").strip().lower()
-            if save_changes == 'yes':
-                return emoji_dict, line_indices_to_delete
-        if action == 'delete':
-            idx_to_delete = texts.index(selected_text)
-            texts.pop(idx_to_delete)
-            line_indices_to_delete.append(line_indices[idx_to_delete])
-        elif action == 'add':
-            new_translation = input("Enter new translation to add: ").strip()
-            if new_translation:
-                texts.append(new_translation)
-        elif action == 'edit':
-            idx_to_edit = texts.index(selected_text)
-            new_translation = input("Enter new translation: ").strip()
-            if new_translation:
-                texts[idx_to_edit] = new_translation
-        elif action == 'auto-repair':
-            texts, line_indices_to_delete = auto_repair(texts, selected_emoji, line_indices)
-        elif action == 'done':
-            break
-
-    emoji_dict[selected_emoji] = texts
-    return emoji_dict, line_indices_to_delete
 
 # Function to create a duplicate translation
 def create_duplicate(emoji, texts):
@@ -240,17 +212,55 @@ def repair_all(emoji_dict, lines, line_indices_dict):
     # Delete lines marked for removal
     new_lines = [line for index, line in enumerate(new_lines) if index not in line_indices_to_delete]
 
+    # Clean the lines
+    new_lines = clean_lines(new_lines)
+
     return new_emoji_dict, new_lines
+
+# Function to list translations that could be faux-amis and handle edit/add/delete
+def handle_faux_amis(emoji_dict, line_indices_dict):
+    all_translations = defaultdict(list)
+
+    # Collect all translations and their corresponding emojis
+    for emoji, texts in emoji_dict.items():
+        for text in texts:
+            all_translations[text].append(emoji)
+
+    # Filter translations that have multiple corresponding emojis
+    faux_amis_candidates = {text: emojis for text, emojis in all_translations.items() if len(emojis) > 1}
+
+    if not faux_amis_candidates:
+        print("No faux-amis candidates found.")
+        return emoji_dict, []
+
+    lines_to_delete = []
+
+    print("Faux-amis candidates:")
+    for text, emojis in faux_amis_candidates.items():
+        print(f"\nThe translation '{text}' is associated with the following emojis:")
+        for idx, emoji in enumerate(emojis):
+            print(f"{idx}: {emoji}")
+
+        for emoji in emojis:
+            texts = emoji_dict[emoji]
+            line_indices = line_indices_dict[emoji]
+            updated_texts, line_indices_to_delete = handle_duplicates_one_by_one(emoji, texts, line_indices)
+            emoji_dict[emoji] = updated_texts
+            lines_to_delete.extend(line_indices_to_delete)
+
+    return emoji_dict, lines_to_delete
 
 # Function to auto-repair duplicates within a specific unicode
 def auto_repair(texts, emoji, line_indices):
-    new_texts = []
-    new_indices_to_delete = []
-    for idx, text in enumerate(texts):
-        if texts.count(text) > 1:
-            new_texts.append(text)
-            new_indices_to_delete.append(line_indices[idx])
-    return new_texts, new_indices_to_delete
+    new_texts = list(dict.fromkeys(texts))  # Remove duplicates while preserving order
+    new_indices_to_delete = [line_indices[i] for i in range(len(texts)) if texts[i] not in new_texts]
+
+    # Clean the texts
+    cleaned_lines = clean_lines(new_texts)
+    
+    return cleaned_lines, new_indices_to_delete
+
+
 
 # Function to strip extra white spaces between the first char (unicode) and translation
 def strip_extra_whitespaces(lines):
@@ -264,25 +274,6 @@ def strip_extra_whitespaces(lines):
         else:
             updated_lines.append(line)
     return updated_lines
-
-# Prompt the user for the concept they want to manipulate
-def choose_concept():
-    print("Choose the concept you want to manipulate:")
-    print("1. Duplicates and faux-amis")
-    print("2. Strip extra white spaces")
-    choice = input("Enter the number of your choice: ")
-    return choice
-
-# Prompt the user for the duplicate handling method
-def choose_duplicate_method():
-    print("Choose how you want to handle duplicates:")
-    print("1. Verify one by one")
-    print("2. List all duplicate unicodes")
-    print("3. Create a duplicate")
-    print("4. List translations that could be faux-amis")
-    print("5. Repair all")
-    choice = input("Enter the number of your choice: ")
-    return choice
 
 # Function to save the updated file
 def save_updated_file(file_path, lines_to_delete, lines):
@@ -308,49 +299,82 @@ def extract_first_unicode_character(lines):
 
     return emoji_dict, line_indices_dict
 
-# File path to read from
-file_path = 'pointers/@' # Replace with your file path
+# Function to remove any trailing non-European characters or spaces from each line, except the first line
+def clean_lines(lines):
+    # Unicode range for basic Latin, Latin-1 Supplement, and Latin Extended-A
+    allowed_chars = re.compile(r'[^\x00-\x7F\u00C0-\u017F\s]+$')
 
-# Read the input text from the file
-lines = read_file(file_path)
+    cleaned_lines = []
+    for i, line in enumerate(lines):
+        if i == 0:
+            # Preserve the first line as is
+            cleaned_lines.append(line)
+        else:
+            # Remove trailing non-European characters and spaces
+            cleaned_line = allowed_chars.sub('', line).rstrip()
+            cleaned_lines.append(cleaned_line + '\n')
+    return cleaned_lines
 
 # Prompt the user for the concept they want to manipulate
-concept_choice = choose_concept()
+def choose_concept():
+    print("Choose the concept you want to manipulate:")
+    print("1. Duplicates and faux-amis")
+    print("2. Strip extra white spaces")
+    choice = input("Enter the number of your choice: ").strip()
+    return choice
 
-if concept_choice == '1':
-    # Extract the first Unicode character and the corresponding text
-    emoji_dict, line_indices_dict = extract_first_unicode_character(lines)
+# Prompt the user for the duplicate handling method
+def choose_duplicate_method():
+    print("Choose how you want to handle duplicates:")
+    print("1. Verify one by one")
+    print("2. List all duplicate unicodes")
+    print("3. Create a duplicate")
+    print("4. List translations that could be faux-amis")
+    print("5. Repair all")
+    choice = input("Enter the number of your choice: ").strip()
+    return choice
 
-    # Track lines to delete
-    lines_to_delete = []
+def main():
+    file_path = 'pointers/@'  # Replace with your file path
 
-    # Handle duplicates and faux-amis based on the chosen method
-    duplicate_method_choice = choose_duplicate_method()
-    if duplicate_method_choice == '1':
-        for emoji, texts in emoji_dict.items():
-            if len(set(texts)) < len(texts):
-                updated_texts, line_indices_to_delete = handle_duplicates_one_by_one(emoji, texts, line_indices_dict[emoji])
+    # Read the input text from the file
+    lines = read_file(file_path)
+
+    # Prompt the user for the concept they want to manipulate
+    concept_choice = choose_concept()
+
+    if concept_choice == '1':
+        # Extract the first Unicode character and the corresponding text
+        emoji_dict, line_indices_dict = extract_first_unicode_character(lines)
+
+        # Track lines to delete
+        lines_to_delete = []
+
+        # Handle duplicates and faux-amis based on the chosen method
+        duplicate_method_choice = choose_duplicate_method()
+        if duplicate_method_choice == '1':
+            emoji_dict, lines_to_delete = handle_duplicates_and_faux_amis(emoji_dict, line_indices_dict)
+        elif duplicate_method_choice == '2':
+            emoji_dict, lines_to_delete = handle_duplicates_list_all(emoji_dict, line_indices_dict)
+        elif duplicate_method_choice == '3':
+            for emoji, texts in emoji_dict.items():
+                updated_texts = create_duplicate(emoji, texts)
                 emoji_dict[emoji] = updated_texts
-                lines_to_delete.extend(line_indices_to_delete)
-    elif duplicate_method_choice == '2':
-        emoji_dict, line_indices_to_delete = handle_duplicates_list_all(emoji_dict, line_indices_dict)
-        lines_to_delete.extend(line_indices_to_delete)
-    elif duplicate_method_choice == '3':
-        for emoji, texts in emoji_dict.items():
-            updated_texts = create_duplicate(emoji, texts)
-            emoji_dict[emoji] = updated_texts
-    elif duplicate_method_choice == '4':
-        emoji_dict, line_indices_to_delete = handle_faux_amis(emoji_dict, line_indices_dict)
-        lines_to_delete.extend(line_indices_to_delete)
-    elif duplicate_method_choice == '5':
-        emoji_dict, updated_lines = repair_all(emoji_dict, lines, line_indices_dict)
-        lines = updated_lines # Update lines with the repaired content
+        elif duplicate_method_choice == '4':
+            emoji_dict, lines_to_delete = handle_faux_amis(emoji_dict, line_indices_dict)
+        elif duplicate_method_choice == '5':
+            emoji_dict, updated_lines = repair_all(emoji_dict, lines, line_indices_dict)
+            lines = updated_lines  # Update lines with the repaired content
 
-    save_updated_file(file_path, lines_to_delete, lines)
+        save_updated_file(file_path, lines_to_delete, lines)
 
-elif concept_choice == '2':
-    # Strip extra white spaces
-    lines = strip_extra_whitespaces(lines)
-    save_updated_file(file_path, [], lines)
-else:
-    print("Invalid choice.")
+    elif concept_choice == '2':
+        # Strip extra white spaces
+        lines = strip_extra_whitespaces(lines)
+        save_updated_file(file_path, [], lines)
+    else:
+        print("Invalid choice.")
+
+# Call the main function
+if __name__ == "__main__":
+    main()
