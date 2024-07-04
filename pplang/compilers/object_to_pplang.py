@@ -13,15 +13,21 @@ reserved_chars = set()
 unicode_to_index = {}
 
 def load_reserved_chars(filename):
-    with open(filename, 'r') as file:
-        for line in file:
-            reserved_chars.update(line.strip())
+    try:
+        with open(filename, 'r') as file:
+            for line in file:
+                reserved_chars.update(line.strip())
+    except FileNotFoundError:
+        logging.error(f"Reserved characters file not found: {filename}")
 
 def load_unicode_map(filename):
-    with open(filename, 'r') as file:
-        unicode_map.extend(file.read().strip())
-    for idx, char in enumerate(unicode_map):
-        unicode_to_index[char] = idx
+    try:
+        with open(filename, 'r') as file:
+            unicode_map.extend(file.read().strip())
+        for idx, char in enumerate(unicode_map):
+            unicode_to_index[char] = idx
+    except FileNotFoundError:
+        logging.error(f"Unicode map file not found: {filename}")
 
 load_reserved_chars("pplang/hard/reserved")
 load_unicode_map("pplang/hard/unicodes")
@@ -52,7 +58,7 @@ def get_dictionary(pointer):
     except FileNotFoundError:
         logging.error(f"Pointer file not found: {pointer}")
         return {}, []
-    
+
 def get_pointer_names(pointer):
     if pointer in pointers_names:
         return pointers_names[pointer]
@@ -138,7 +144,6 @@ def translate_with_priority(big_string, translations):
             yield big_string[i]
             i += 1
 
-
 def process_object(schema, obj):
     self_pointers_pos = {}
 
@@ -185,7 +190,7 @@ def process_object(schema, obj):
         dictionary, dictionary_pixels = get_dictionary(schema)
         translated = ''.join(translate_with_priority(obj.replace(" ", "​"), dictionary))# Ensure generator is fully consumed
         return translated
-    
+
 def get_reverse_dictionary(dictionary):
     if isinstance(dictionary, dict):
         reverse_dict = {v: k for k, v in dictionary.items()}
@@ -193,7 +198,6 @@ def get_reverse_dictionary(dictionary):
         return reverse_dict
     else:
         raise ValueError("Input is not a dictionary")
-
 
 def reverse_compiled_string(compiled_string, pointer):
     dictionary, dictionary_pixels = get_dictionary(pointer)
@@ -228,50 +232,18 @@ def reverse_compiled_string(compiled_string, pointer):
     
     logging.debug(f"decoded: {decoded}")
     return decoded
-    # i = 0
-    # uncompiled_string = ""
-    # max_key_length = len(sorted_keys[0]) if sorted_keys else 0
 
-    # while i < len(compiled_string):
-    #     matched = False
-    #     # Start with the maximum length of the keys and decrease to 2
-    #     for length in range(max_key_length, 1, -1):
-    #         if i + length > len(compiled_string):
-    #             continue
-    #         for key in sorted_keys:
-    #             if len(key) == length and compiled_string[i:i+len(key)] == key:
-    #                 logging.debug(f"Uncompiling: {compiled_string[i:i+len(key)]} -> {reverse_dictionary[key]}")
-    #                 uncompiled_string += reverse_dictionary[key]
-    #                 i += len(key)
-    #                 matched = True
-    #                 break
-    #         if matched:
-    #             break
-    #     if not matched:
-    #         # If no match, add the current character and move to the next
-    #         logging.debug(f"No match found for: {compiled_string[i]}")
-    #         uncompiled_string += compiled_string[i]
-    #         i += 1
+def next_char(compiled_str):
+    for char in compiled_str:
+        yield char
 
-    # return decoded
-
-# Convert numbers to corresponding Unicode characters and escape reserved characters, excluding floating point numbers
-def convert_num(num):
-    if num.isdigit():
-        index = int(num)
-        if 0 <= index < len(unicode_map):
-            unicode_char = unicode_map[index]
-            if unicode_char in reserved_chars:
-                return f"\\{unicode_char}"
-            return unicode_char
-    return num
-
-def replace_at_index(s, index, replacement):
-    # Check if the index is within the valid range
-    if index < 0 or index >= len(s):
-        raise IndexError("Index out of range")
-    # Create a new string with the replacement
-    return s[:index] + replacement + s[index+1:]
+def jump_to_next_schema(char_gen):
+    substring = ""
+    for char in char_gen:
+        if char == "$":
+            return substring
+        substring += char
+    return substring  # In case no more "$" is found, return the remaining substring
 
 def compile(pointer, obj):
     start_time = time.time()
@@ -299,25 +271,10 @@ def compile(pointer, obj):
     end_time = time.time()
     logging.warning(f"Compilation time: {end_time - start_time:.6f} seconds")
 
-    return unicode_result
-
-def next_char(compiled_str):
-    for char in compiled_str:
-        yield char
-
-def jump_to_next_schema(char_gen):
-    substring = ""
-    for char in char_gen:
-        if char == "$":
-            return substring
-        substring += char
-    return substring # In case no more "$" is found, return the remaining substring
+    return unicode_result, end_time - start_time
 
 def uncompile(compiled_str):
     start_time = time.time()
-
-    # xx=compiled_str.replace("​", "___")
-    # print(f"xx:{xx}")
 
     char_gen = next_char(compiled_str)
     decoded_data = ""
@@ -426,8 +383,8 @@ def uncompile(compiled_str):
                     decoded_data += f"\"{schema[0][key]}\":\"{pointer_name}\""
             elif current_operation == "@":
                 substring = jump_to_next_schema(char_gen)
-                with_spaces=(char+substring).replace("​", "_")
-                translation = ''.join(reverse_compiled_string(char+substring.replace("​", " "), "@"))
+                with_spaces = (char + substring).replace("​", "_")
+                translation = ''.join(reverse_compiled_string(char + substring.replace("​", " "), "@"))
                 decoded_data += translation
 
     decoded_data = ''.join(decoded_data)
@@ -438,18 +395,57 @@ def uncompile(compiled_str):
             compiled_results = json.loads(decoded_data)
         except json.JSONDecodeError as e:
             logging.error(f"Failed to parse decoded data: {e}")
-            return None
+            return None, 0
 
     end_time = time.time()
     logging.warning(f"Uncompilation time: {end_time - start_time:.6f} seconds")
 
-    return compiled_results
+    return compiled_results, end_time - start_time
 
 def calculate_compression_rate(original, compiled):
     original_size = len(original.encode('utf-8'))
     compiled_size = len(compiled.encode('utf-8'))
     compression_rate = (1 - (compiled_size / original_size)) * 100
     return compression_rate
+
+def calculate_reconstruction_rate(original, reconstructed):
+    # Ensure both strings are not None
+    if original is None or reconstructed is None:
+        return 0.0
+
+    original = original.encode('utf-8')
+    reconstructed = reconstructed.encode('utf-8')
+
+    # Ensure both strings are of the same length
+    min_length = min(len(original), len(reconstructed))
+    original = original[:min_length]
+    reconstructed = reconstructed[:min_length]
+
+    # Calculate the number of matching characters
+    matching_chars = sum(o == r for o, r in zip(original, reconstructed))
+
+    # Calculate the reconstruction rate as a percentage
+    if len(original) == 0:
+        return 0.0
+    reconstruction_rate = (matching_chars / len(original)) * 100
+    return reconstruction_rate
+
+def convert_num(num):
+    if num.isdigit():
+        index = int(num)
+        if 0 <= index < len(unicode_map):
+            unicode_char = unicode_map[index]
+            if unicode_char in reserved_chars:
+                return f"\\{unicode_char}"
+            return unicode_char
+    return num
+
+def replace_at_index(s, index, replacement):
+    # Check if the index is within the valid range
+    if index < 0 or index >= len(s):
+        raise IndexError("Index out of range")
+    # Create a new string with the replacement
+    return s[:index] + replacement + s[index+1:]
 
 # Example usage
 pointer = 'ui_color_palette_schema'
@@ -472,40 +468,50 @@ data_color_palet_response = {
 
 data_string = "hello, what's up today? anything you would like to discuss?"
 
-compiled_data = compile(pointer, data)
+compiled_data, compile_time = compile(pointer, data)
 print("Compiled Data:")
 print(compiled_data)
 
-uncompiled_data = uncompile(compiled_data)
+uncompiled_data, uncompile_time = uncompile(compiled_data)
 print("Uncompiled Data:")
 print(uncompiled_data)
 
-corrupted_data = uncompile(f"{compiled_data[:5]}l{compiled_data[5:]}")
-print("Corrupted Data:")
-print(corrupted_data)
-
-compiled_colorpaletresponse_data = compile("ui_color_palette_response", data_color_palet_response)
-print("Compiled ColorPaletResonse Data:")
+compiled_colorpaletresponse_data, _ = compile("ui_color_palette_response", data_color_palet_response)
+print("Compiled ColorPaletResponse Data:")
 print(compiled_colorpaletresponse_data)
 
-uncompiled_colorpaletresponse_data = uncompile(compiled_colorpaletresponse_data)
-print("Uncompiled ColorPaletResonse Data:")
+uncompiled_colorpaletresponse_data, _ = uncompile(compiled_colorpaletresponse_data)
+print("Uncompiled ColorPaletResponse Data:")
 print(uncompiled_colorpaletresponse_data)
 
-compiled_string = compile("string", data_string)
-print("Compiled compiled_string Data:")
+compiled_string, compile_string_time = compile("string", data_string)
+print("Compiled String Data:")
 print(compiled_string)
-print("Original string Data:", data_string)
+print("Original String Data:", data_string)
 
-uncompiled_string_data = uncompile(compiled_string)
-print("Uncompiled string Data:")
+uncompiled_string_data, uncompile_string_time = uncompile(compiled_string)
+print("Uncompiled String Data:")
 print(uncompiled_string_data)
 
 # Calculate compression rates
-compression_rate_data = calculate_compression_rate(str(data), compiled_data)
-compression_rate_colorpaletresponse = calculate_compression_rate(str(data_color_palet_response), compiled_colorpaletresponse_data)
-compression_rate_string = calculate_compression_rate(data_string, compiled_string)
+compression_rate_data = calculate_compression_rate(str(uncompiled_data), compiled_data)
+# compression_rate_colorpaletresponse = calculate_compression_rate(str(uncompiled_colorpaletresponse_data), compiled_colorpaletresponse_data)
+compression_rate_string = calculate_compression_rate(uncompiled_string_data, compiled_string)
+
+# Calculate reconstruction rates
+reconstruction_rate_data = calculate_reconstruction_rate(str(data), str(uncompiled_data))
+# reconstruction_rate_colorpaletresponse = calculate_reconstruction_rate(str(data_color_palet_response), str(uncompiled_colorpaletresponse_data))
+reconstruction_rate_string = calculate_reconstruction_rate(data_string, uncompiled_string_data)
 
 print(f"Compression Rate (data): {compression_rate_data:.2f}%")
-print(f"Compression Rate (color_palet_response): {compression_rate_colorpaletresponse:.2f}%")
+# print(f"Compression Rate (color_palet_response): {compression_rate_colorpaletresponse:.2f}%")
 print(f"Compression Rate (string): {compression_rate_string:.2f}%")
+
+print(f"Reconstruction Rate (data): {reconstruction_rate_data:.2f}%")
+# print(f"Reconstruction Rate (color_palet_response): {reconstruction_rate_colorpaletresponse:.2f}%")
+print(f"Reconstruction Rate (string): {reconstruction_rate_string:.2f}%")
+
+print(f"Compilation time for data: {compile_time:.6f} seconds")
+print(f"Uncompilation time for data: {uncompile_time:.6f} seconds")
+print(f"Compilation time for string: {compile_string_time:.6f} seconds")
+print(f"Uncompilation time for string: {uncompile_string_time:.6f} seconds")
