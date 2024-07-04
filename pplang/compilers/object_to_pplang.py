@@ -82,8 +82,10 @@ def get_pointer_names(pointer):
     return self_pointers_names
 
 def parse_schema(schema):
+    logging.debug(f"parsechemabefore:{schema}")
     formatted_string = schema.replace("{", '{"').replace("}", '"}').replace(":", '": "').replace(",", '", "')
-    if formatted_string[0] == "[" or formatted_string == "{":
+    logging.debug(f"formatted_string:{formatted_string}")
+    if formatted_string[0] == "[" or formatted_string[0]== "{":
         try:
             return json.loads(formatted_string)
         except json.JSONDecodeError as e:
@@ -147,6 +149,7 @@ def translate_with_priority(big_string, translations):
 def process_object(schema, obj):
     self_pointers_pos = {}
 
+    logging.debug(f"process_object:schema,obj::{schema.__class__}:{obj}") 
     if isinstance(schema, list):
         compiled_result = []
         for item in obj:
@@ -167,6 +170,7 @@ def process_object(schema, obj):
         compiled_item = [None] * len(schema)
         idx = 0
         for key, value in schema.items():
+            logging.debug(f"key:value:::{key}:{value}")
             if value in obj or value[0] == "+":
                 if idx == 0:
                     self_pointers_pos[key] = {}
@@ -254,6 +258,9 @@ def compile(pointer, obj):
     raw_schema = schema_pointers_names[0] if schema_pointers_names else ""
     schema = parse_schema(raw_schema)
 
+    logging.debug(f"schema:{schema}")
+    logging.debug(f"obj:{obj}")
+
     processed_obj = process_object(schema, obj)
     stringified_obj = f"{processed_obj}"
     stringified_obj = stringified_obj.replace("\\'", "'")
@@ -287,8 +294,15 @@ def uncompile(compiled_str):
     x_object = 0
     decoding_up_to = ""
     in_nested_build = False
+    decodeding_up_to=""
 
     for char in char_gen:
+        # print(f"decoded_data:{decoded_data}")
+        # print(f"schema:{schema}")
+        # print(f"parent_schema:{parent_schema}")
+        # print(f"decodeding_up_to:{decodeding_up_to}")
+        # print(f"last-currentoperation:{current_operation}")
+        # print(f"xobject:{x_object}")
         decoding_up_to += char
         if char == '\\' and not is_escaped:
             is_escaped = True
@@ -408,28 +422,6 @@ def calculate_compression_rate(original, compiled):
     compression_rate = (1 - (compiled_size / original_size)) * 100
     return compression_rate
 
-def calculate_reconstruction_rate(original, reconstructed):
-    # Ensure both strings are not None
-    if original is None or reconstructed is None:
-        return 0.0
-
-    original = original.encode('utf-8')
-    reconstructed = reconstructed.encode('utf-8')
-
-    # Ensure both strings are of the same length
-    min_length = min(len(original), len(reconstructed))
-    original = original[:min_length]
-    reconstructed = reconstructed[:min_length]
-
-    # Calculate the number of matching characters
-    matching_chars = sum(o == r for o, r in zip(original, reconstructed))
-
-    # Calculate the reconstruction rate as a percentage
-    if len(original) == 0:
-        return 0.0
-    reconstruction_rate = (matching_chars / len(original)) * 100
-    return reconstruction_rate
-
 def convert_num(num):
     if num.isdigit():
         index = int(num)
@@ -495,21 +487,12 @@ print(uncompiled_string_data)
 
 # Calculate compression rates
 compression_rate_data = calculate_compression_rate(str(uncompiled_data), compiled_data)
-# compression_rate_colorpaletresponse = calculate_compression_rate(str(uncompiled_colorpaletresponse_data), compiled_colorpaletresponse_data)
+compression_rate_colorpaletresponse = calculate_compression_rate(str(uncompiled_colorpaletresponse_data), compiled_colorpaletresponse_data)
 compression_rate_string = calculate_compression_rate(uncompiled_string_data, compiled_string)
 
-# Calculate reconstruction rates
-reconstruction_rate_data = calculate_reconstruction_rate(str(data), str(uncompiled_data))
-# reconstruction_rate_colorpaletresponse = calculate_reconstruction_rate(str(data_color_palet_response), str(uncompiled_colorpaletresponse_data))
-reconstruction_rate_string = calculate_reconstruction_rate(data_string, uncompiled_string_data)
-
 print(f"Compression Rate (data): {compression_rate_data:.2f}%")
-# print(f"Compression Rate (color_palet_response): {compression_rate_colorpaletresponse:.2f}%")
+print(f"Compression Rate (color_palet_response): {compression_rate_colorpaletresponse:.2f}%")
 print(f"Compression Rate (string): {compression_rate_string:.2f}%")
-
-print(f"Reconstruction Rate (data): {reconstruction_rate_data:.2f}%")
-# print(f"Reconstruction Rate (color_palet_response): {reconstruction_rate_colorpaletresponse:.2f}%")
-print(f"Reconstruction Rate (string): {reconstruction_rate_string:.2f}%")
 
 print(f"Compilation time for data: {compile_time:.6f} seconds")
 print(f"Uncompilation time for data: {uncompile_time:.6f} seconds")
