@@ -61,8 +61,6 @@ def parse_schema(schema):
         return {}
     
 def get_pointer_pos(pointers_pos, pointer, name):
-    if pointer in reserved_chars:
-        return name
     if pointer not in pointers_pos:
         pointers_pos[pointer] = {}
     
