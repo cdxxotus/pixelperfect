@@ -458,7 +458,21 @@ data_color_palet_response = {
     "inference_time": 2.1053810119628906,
 }
 
-data_string = "hello, what's up today? anything you would like to discuss?"
+data_string = """
+Vous pouvez partager un article en cliquant sur les icônes de partage en haut à droite de celui-ci. 
+La reproduction totale ou partielle d’un article, sans l’autorisation écrite et préalable du Monde, est strictement interdite. 
+Pour plus d’informations, consultez nos conditions générales de vente. 
+Pour toute demande d’autorisation, contactez syndication@lemonde.fr. 
+En tant qu’abonné, vous pouvez offrir jusqu’à cinq articles par mois à l’un de vos proches grâce à la fonctionnalité « Offrir un article ». 
+
+https://www.lemonde.fr/politique/live/2024/07/04/en-direct-legislatives-2024-plus-de-3-1-millions-de-procurations-sur-l-ensemble-des-scrutins_6245747_823448.html
+
+Le préfet de police de Paris, Laurent Nuñez, va interdire une manifestation du collectif Action antifasciste Paris-Banlieue prévue dimanche devant l’Assemblée nationale à la clôture du second tour des législatives, a rapporté jeudi soir à l’Agence France-Presse une source policière.
+
+Ce collectif a appelé dans un post sur X à un rassemblement « dimanche à 20 h devant l’Assemblée nationale quelle que soit l’issue » du scrutin. « Aujourd’hui plus que jamais, faisons bloc par tous les moyens contre l’extrême droite et ses alliés », a-t-il fait valoir. Sur les réseaux sociaux, le collectif a lancé un appel à « converger vers l’Assemblée nationale ».
+
+Le ministre de l’intérieur, Gérald Darmanin, a annoncé jeudi que « 30 000 policiers et gendarmes, dont 5 000 à Paris et sa banlieue » seraient mobilisés dimanche soir pour le second tour du scrutin législatif anticipé. Les services de renseignement considèrent, selon une source policière, qu’il existe « de réels risques de troubles à l’ordre public après le second tour avec à la fois des rassemblements qui pourraient donner lieu à des incidents mais aussi des risques d’affrontements entre des groupes antagonistes ».
+"""
 
 compiled_data, compile_time = compile(pointer, data)
 print("Compiled Data:")
