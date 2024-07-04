@@ -59,8 +59,11 @@ def parse_schema(schema):
     except json.JSONDecodeError as e:
         logging.error(f"Failed to parse schema: {e}")
         return {}
-
+    
 def get_pointer_pos(pointers_pos, pointer, name):
+    print(f"get_pointer_pos:::{pointers_pos}:{pointer}:{name}")
+    if pointer in reserved_chars:
+        return name
     if pointer not in pointers_pos:
         pointers_pos[pointer] = {}
     
@@ -86,9 +89,9 @@ def get_pointer_pos(pointers_pos, pointer, name):
 
 def process_object(schema, obj):
     self_pointers_pos = {}
-    compiled_result = []
 
     if isinstance(schema, list):
+        compiled_result = []
         for item in obj:
             compiled_item = [None] * len(schema[0])
             idx = 0
@@ -97,12 +100,46 @@ def process_object(schema, obj):
                     if idx == 0:
                         self_pointers_pos[key] = {}
                     item_value = item[value]
+                    print(f"{item_value}:{item}")
                     key_pointer_index = get_pointer_pos(self_pointers_pos, key, item_value)
                     compiled_item[idx] = key_pointer_index
                     idx += 1
             compiled_result.append(compiled_item)
     
-    return compiled_result
+        return compiled_result
+    else:
+        compiled_item = [None] * len(schema)
+        idx = 0
+        for key, value in schema.items():
+            if value in obj or value[0]=="+":
+                if idx == 0:
+                    self_pointers_pos[key] = {}
+                if value[0]=="+":
+                    const_names=get_pointer_names("+")
+                    item_key=const_names[int(value[1:])]
+                    item_value=obj[item_key]
+                    print(f"item-key:{item_key}")
+                else:
+                    item_value = obj[value]
+                if key=="*":
+                    compiled_item[idx] = f"*`{item_value}`"
+                elif key[0]=="+":
+                    compiled_item[idx] = f"`{item_value}`"
+                else:
+                    key_pointer_index = get_pointer_pos(self_pointers_pos, key, item_value)
+                    compiled_item[idx] = key_pointer_index
+                idx += 1
+    
+        return compiled_item
+    
+# Convert numbers to corresponding Unicode characters and escape reserved characters, excluding floating point numbers
+def convert_num(num):
+    if num.isdigit():
+        unicode_char = unicode_map[int(num)]
+        if unicode_char in reserved_chars:
+            return f"\\{unicode_char}"
+        return unicode_char
+    return num
 
 def compile(pointer, obj):
     start_time = time.time()
@@ -112,11 +149,16 @@ def compile(pointer, obj):
 
     raw_schema = schema_pointers_names[0] if schema_pointers_names else ""
     schema = parse_schema(raw_schema)
+    print(f"{schema}")
 
     processed_obj = process_object(schema, obj)
-    compiled_result = f"${schema_pointer_pos}{processed_obj}".replace(" ", "").replace("None", "-").replace("],[", '|').replace("[[", "[").replace("]]", "]")
-    
-    unicode_result = ''.join(f"\\{unicode_map[int(num)]}" if num.isdigit() and unicode_map[int(num)] in reserved_chars else unicode_map[int(num)] if num.isdigit() else num for num in re.findall(r'\d+|.', compiled_result))
+
+    compiled_result = f"${schema_pointer_pos}{processed_obj}".replace('\\\\','\\').replace("'","").replace(" ", "").replace("None", "-").replace("],[", '|').replace("[[", "[").replace("]]", "]")
+    print(f"COMPILED:: {compiled_result}")
+
+        # Regex to match digits that are not part of floating point numbers
+    parts = re.split(r'(\d+\.\d+|\d+|.)', compiled_result)
+    unicode_result = ''.join(convert_num(part) if part.isdigit() else part for part in parts if part)
 
     end_time = time.time()
     logging.warning(f"Compilation time: {end_time - start_time:.6f} seconds")
@@ -230,6 +272,11 @@ data = [
     {"color": "DarkGray", "type": "Subtle background color", "score": 0.9996941089630127}
 ]
 
+data_color_palet_response = {
+    "color_palet": """$\$[¾,"|ʹ,&|ャ,%|-,#|-,(|両,\$|~,!|-,)|-,\']""",
+    "inference_time": 2.1053810119628906,
+}
+
 compiled_data = compile(pointer, data)
 print("Compiled Data:")
 print(compiled_data)
@@ -241,3 +288,7 @@ print(uncompiled_data)
 corrupted_data = uncompile(f"{compiled_data[:5]}l{compiled_data[5:]}")
 print("Corrupted Data:")
 print(corrupted_data)
+
+compiled_colorpaletresponse_data = compile("ui_color_palette_response", data_color_palet_response)
+print("Compiled ColorPaletResonse Data:")
+print(compiled_colorpaletresponse_data)

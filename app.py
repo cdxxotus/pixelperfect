@@ -8,6 +8,7 @@ import json
 from llm.text_to_ui_color_palet import get_colors_and_types_from_text
 from llm.invent_text_from_image import invent_text_from_image
 from llm.get_home_screen_description import get_home_screen_description
+from pplang.compilers import object_to_pplang
 
 app = Flask(__name__)
 
@@ -88,7 +89,7 @@ def text_to_color():
         inference_time = end_time - start_time
         logging.info(f"Inference time: {inference_time:.2f} seconds")
 
-        return json.dumps({"color_palet": color_palet, 'inference_time': inference_time}, indent=4)
+        return object_to_pplang.compile("ui_color_palette_response", {"color_palet": color_palet, 'inference_time': inference_time})
 
     except Exception as e:
         logging.error("Error processing request: %s", e)
