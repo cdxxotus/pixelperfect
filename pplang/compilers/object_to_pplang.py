@@ -182,6 +182,7 @@ def uncompile(compiled_str):
     start_time = time.time()
 
     # Initialize state variables
+    print(f"uncompiling:{compiled_str}")
     char_gen = next_char(compiled_str)
     decoded_data = ""
     is_escaped = False
@@ -197,6 +198,7 @@ def uncompile(compiled_str):
             # Set escape flag
             is_escaped = True
         elif char == '$' and is_escaped == False:
+            x_object=0
             current_operation="$"
         elif char=="[" and is_escaped==False:
             x_object=0
@@ -226,7 +228,13 @@ def uncompile(compiled_str):
                 schema_list_pointers_names = get_pointer_names("=")
                 schema_name=schema_list_pointers_names[pos]
                 raw_schema=get_pointer_names(schema_name)[0]
-                schema = parse_schema(raw_schema)
+                unkown_schema = parse_schema(raw_schema)
+                if isinstance(unkown_schema,dict):
+                    schema=[]
+                    ensure_size(schema, 0)
+                    schema[0]=unkown_schema
+                else:
+                    schema=unkown_schema
                 current_operation=""
             elif len(current_operation) == 2 and f"{current_operation[0]}{current_operation[1]}" == "[{":
                 x_object=0
@@ -245,9 +253,11 @@ def uncompile(compiled_str):
                     decoded_data = f"{decoded_data}{'{'}\"{schema[0][key]}\":\"{pointer_name}\""
                     current_operation = "{"
             elif len(current_operation) == 1 and f"{current_operation[0]}" == "{":
+                # print(f"schema:{schema}:x_object:{x_object}:decoded_data:{decoded_data}")
                 key=list(schema[0].keys())[x_object]
                 if char=="-":
                     decoded_data = f"{decoded_data}\"{schema[0][key]}\":null"
+                    x_object=x_object+1
                 else:
                     pointer_names=get_pointer_names(key)
                     if len(pointer_names)>pos:
@@ -255,7 +265,9 @@ def uncompile(compiled_str):
                         decoded_data = f"{decoded_data}\"{schema[0][key]}\":\"{pointer_name}\""
                         x_object=x_object+1
 
+    x_object=x_object+1
     decoded_data = ''.join(decoded_data)
+    print(f"decoded:{decoded_data}")
 
     # Convert string back to list
     try:
@@ -296,13 +308,13 @@ uncompiled_data = uncompile(compiled_data)
 print("Uncompiled Data:")
 print(uncompiled_data)
 
-corrupted_data = uncompile(f"{compiled_data[:5]}l{compiled_data[5:]}")
-print("Corrupted Data:")
-print(corrupted_data)
+# corrupted_data = uncompile(f"{compiled_data[:5]}l{compiled_data[5:]}")
+# print("Corrupted Data:")
+# print(corrupted_data)
 
-compiled_colorpaletresponse_data = compile("ui_color_palette_response", data_color_palet_response)
-print("Compiled ColorPaletResonse Data:")
-print(compiled_colorpaletresponse_data)
+# compiled_colorpaletresponse_data = compile("ui_color_palette_response", data_color_palet_response)
+# print("Compiled ColorPaletResonse Data:")
+# print(compiled_colorpaletresponse_data)
 
 # uncompiled_colorpaletresponse_data = uncompile(compiled_colorpaletresponse_data)
 # print("Uncompiled ColorPaletResonse Data:")
