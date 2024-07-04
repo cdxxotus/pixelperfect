@@ -137,7 +137,7 @@ def convert_num(num):
     if num.isdigit():
         unicode_char = unicode_map[int(num)]
         if unicode_char in reserved_chars:
-            return f"\\{unicode_char}"
+            return f"\{unicode_char}"
         return unicode_char
     return num
 
@@ -153,7 +153,7 @@ def compile(pointer, obj):
 
     processed_obj = process_object(schema, obj)
 
-    compiled_result = f"${schema_pointer_pos}{processed_obj}".replace('\\\\','\\').replace("'","").replace(" ", "").replace("None", "-").replace("],[", '|').replace("[[", "[").replace("]]", "]")
+    compiled_result = f"${schema_pointer_pos}{processed_obj}".replace('\\\\','\\').replace("'`","`").replace("`'","`").replace(" ", "").replace("None", "-").replace("],[", '|').replace("[[", "[").replace("]]", "]")
     print(f"COMPILED:: {compiled_result}")
 
         # Regex to match digits that are not part of floating point numbers
