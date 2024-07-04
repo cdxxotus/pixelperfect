@@ -120,9 +120,9 @@ def process_object(schema, obj):
                 else:
                     item_value = obj[value]
                 if key=="*":
-                    compiled_item[idx] = f"*`{item_value}`"
+                    compiled_item[idx] = f"*({item_value})"
                 elif key[0]=="+":
-                    compiled_item[idx] = f"`{item_value}`"
+                    compiled_item[idx] = f"({item_value})"
                 else:
                     key_pointer_index = get_pointer_pos(self_pointers_pos, key, item_value)
                     compiled_item[idx] = key_pointer_index
@@ -162,7 +162,7 @@ def compile(pointer, obj):
         stringified_obj=replace_at_index(stringified_obj, len(stringified_obj) - 1, "}")
 
 
-    compiled_result = f"${schema_pointer_pos}{stringified_obj}".replace('\\\\','\\').replace("'*","*").replace("'`","`").replace("`'","`").replace(" ", "").replace("None", "-").replace("],[", '|').replace("[[", "[").replace("]]", "]")
+    compiled_result = f"${schema_pointer_pos}{stringified_obj}".replace('\\\\','\\').replace("'*","*").replace("'`","`").replace("`'","`").replace(" ", "").replace("None", "-").replace("],[", '|').replace("[[", "[").replace("]]", "]").replace(")'", ")").replace("'(", "(")
     print(f"COMPILED:: {compiled_result}")
 
         # Regex to match digits that are not part of floating point numbers
@@ -284,7 +284,7 @@ data = [
 ]
 
 data_color_palet_response = {
-    "color_palet": """$\$[¾,"|ʹ,&|ャ,%|-,#|-,(|両,\$|~,!|-,)|-,\']""",
+    "color_palet": """$\$[¾,"|ʹ,&|ャ,%|-,#|-,\(|両,\$|~,!|-,\)|-,\']""",
     "inference_time": 2.1053810119628906,
 }
 
