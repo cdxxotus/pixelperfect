@@ -61,7 +61,6 @@ def parse_schema(schema):
         return {}
     
 def get_pointer_pos(pointers_pos, pointer, name):
-    print(f"get_pointer_pos:::{pointers_pos}:{pointer}:{name}")
     if pointer in reserved_chars:
         return name
     if pointer not in pointers_pos:
@@ -100,7 +99,6 @@ def process_object(schema, obj):
                     if idx == 0:
                         self_pointers_pos[key] = {}
                     item_value = item[value]
-                    print(f"{item_value}:{item}")
                     key_pointer_index = get_pointer_pos(self_pointers_pos, key, item_value)
                     compiled_item[idx] = key_pointer_index
                     idx += 1
@@ -141,6 +139,13 @@ def convert_num(num):
         return unicode_char
     return num
 
+def replace_at_index(s, index, replacement):
+    # Check if the index is within the valid range
+    if index < 0 or index >= len(s):
+        raise IndexError("Index out of range")
+    # Create a new string with the replacement
+    return s[:index] + replacement + s[index+1:]
+
 def compile(pointer, obj):
     start_time = time.time()
 
@@ -149,11 +154,15 @@ def compile(pointer, obj):
 
     raw_schema = schema_pointers_names[0] if schema_pointers_names else ""
     schema = parse_schema(raw_schema)
-    print(f"{schema}")
 
     processed_obj = process_object(schema, obj)
+    stringified_obj = f"{processed_obj}"
+    if stringified_obj[0]=="[" and stringified_obj[1] != "[":
+        stringified_obj=replace_at_index(stringified_obj, 0, "{")
+        stringified_obj=replace_at_index(stringified_obj, len(stringified_obj) - 1, "}")
 
-    compiled_result = f"${schema_pointer_pos}{processed_obj}".replace('\\\\','\\').replace("'*","*").replace("'`","`").replace("`'","`").replace(" ", "").replace("None", "-").replace("],[", '|').replace("[[", "[").replace("]]", "]")
+
+    compiled_result = f"${schema_pointer_pos}{stringified_obj}".replace('\\\\','\\').replace("'*","*").replace("'`","`").replace("`'","`").replace(" ", "").replace("None", "-").replace("],[", '|').replace("[[", "[").replace("]]", "]")
     print(f"COMPILED:: {compiled_result}")
 
         # Regex to match digits that are not part of floating point numbers
@@ -182,6 +191,8 @@ def uncompile(compiled_str):
     x_object=0
 
     for char in char_gen:
+        if char=="*":
+            current_operation="*"
         if char == '\\' and is_escaped == False:
             # Set escape flag
             is_escaped = True
@@ -292,3 +303,7 @@ print(corrupted_data)
 compiled_colorpaletresponse_data = compile("ui_color_palette_response", data_color_palet_response)
 print("Compiled ColorPaletResonse Data:")
 print(compiled_colorpaletresponse_data)
+
+# uncompiled_colorpaletresponse_data = uncompile(compiled_colorpaletresponse_data)
+# print("Uncompiled ColorPaletResonse Data:")
+# print(uncompiled_colorpaletresponse_data)
