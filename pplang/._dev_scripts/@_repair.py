@@ -5,15 +5,22 @@ from collections import defaultdict
 from datetime import datetime
 import random
 
+# Function to create a backup of the file
+def create_backup(file_path):
+    backup_path = f"{file_path}.bak"
+    shutil.copy(file_path, backup_path)
+    print(f"Backup created at {backup_path}")
+
 # Function to read the input file
 def read_file(file_path):
     with open(file_path, 'r', encoding='utf-8') as file:
         return file.readlines()
-
-# Function to write the updated content back to the file
+    
+# Function to write updated lines back to the file
 def write_file(file_path, lines):
-    with open(file_path, 'w', encoding='utf-8') as file:
-        file.writelines(lines)
+    with open(file_path, 'w', encoding='utf-8') as f:
+        f.writelines(lines)
+    print("Updated file has been saved.")
 
 # Function to create a backup of the file
 def create_backup(file_path):
@@ -187,6 +194,19 @@ def create_duplicate(emoji, texts):
         texts.append(new_translation)
     return texts
 
+# Function to generate a unique Unicode character
+def generate_unique_unicode(emoji_dict):
+    existing_unicodes = set(emoji_dict.keys())
+    
+    # Range of Unicode characters to choose from
+    unicode_start = 0x1F300  # Starting point of Unicode block for emojis
+    unicode_end = 0x1F5FF  # Ending point of Unicode block for emojis
+
+    while True:
+        new_unicode = chr(random.randint(unicode_start, unicode_end))
+        if new_unicode not in existing_unicodes:
+            return new_unicode
+
 # Function to repair all duplicates by making unicodes unique
 def repair_all(emoji_dict, lines, line_indices_dict):
     existing_unicodes = set(emoji_dict.keys())
@@ -210,19 +230,6 @@ def repair_all(emoji_dict, lines, line_indices_dict):
 
     return new_emoji_dict, new_lines
 
-# Function to generate a unique Unicode character
-def generate_unique_unicode(emoji_dict):
-    existing_unicodes = set(emoji_dict.keys())
-    
-    # Range of Unicode characters to choose from
-    unicode_start = 0x1F300  # Starting point of Unicode block for emojis
-    unicode_end = 0x1F5FF  # Ending point of Unicode block for emojis
-
-    while True:
-        new_unicode = chr(random.randint(unicode_start, unicode_end))
-        if new_unicode not in existing_unicodes:
-            return new_unicode
-
 # Function to auto-repair duplicates within a specific unicode
 def auto_repair(texts, emoji, line_indices):
     new_texts = []
@@ -233,10 +240,24 @@ def auto_repair(texts, emoji, line_indices):
             new_indices_to_delete.append(line_indices[idx])
     return new_texts, new_indices_to_delete
 
+# Function to strip extra white spaces between the first char (unicode) and translation
+def strip_extra_whitespaces(lines):
+    updated_lines = []
+    for line in lines:
+        # Check if the line has at least two characters
+        if len(line) > 1 and line[1] == ' ':
+            # Remove the whitespace at position [1]
+            updated_line = line[0] + line[2:]
+            updated_lines.append(updated_line)
+        else:
+            updated_lines.append(line)
+    return updated_lines
+
 # Prompt the user for the concept they want to manipulate
 def choose_concept():
     print("Choose the concept you want to manipulate:")
     print("1. Duplicates and faux-amis")
+    print("2. Strip extra white spaces")
     choice = input("Enter the number of your choice: ")
     return choice
 
@@ -253,6 +274,7 @@ def choose_duplicate_method():
 
 # Function to save the updated file
 def save_updated_file(file_path, lines_to_delete, lines):
+
     lines_to_delete = set(lines_to_delete)
     updated_lines = [line for index, line in enumerate(lines) if index not in lines_to_delete]
 
@@ -261,7 +283,6 @@ def save_updated_file(file_path, lines_to_delete, lines):
 
     # Write the updated lines back to the file
     write_file(file_path, updated_lines)
-    print("Updated file has been saved.")
 
 # Updated extraction logic to get the first Unicode character of the line
 def extract_first_unicode_character(lines):
@@ -283,17 +304,17 @@ file_path = 'pointers/@'  # Replace with your file path
 # Read the input text from the file
 lines = read_file(file_path)
 
-# Extract the first Unicode character and the corresponding text
-emoji_dict, line_indices_dict = extract_first_unicode_character(lines)
-
 # Prompt the user for the concept they want to manipulate
 concept_choice = choose_concept()
 
-# Track lines to delete
-lines_to_delete = []
-
-# Loop through each emoji and handle based on the chosen concept
 if concept_choice == '1':
+    # Extract the first Unicode character and the corresponding text
+    emoji_dict, line_indices_dict = extract_first_unicode_character(lines)
+
+    # Track lines to delete
+    lines_to_delete = []
+
+    # Handle duplicates and faux-amis based on the chosen method
     duplicate_method_choice = choose_duplicate_method()
     if duplicate_method_choice == '1':
         for emoji, texts in emoji_dict.items():
@@ -317,5 +338,9 @@ if concept_choice == '1':
 
     save_updated_file(file_path, lines_to_delete, lines)
 
+elif concept_choice == '2':
+    # Strip extra white spaces
+    lines = strip_extra_whitespaces(lines)
+    save_updated_file(file_path, [], lines)
 else:
-    print("Faux-amis handling is not yet implemented.")
+    print("Invalid choice.")
