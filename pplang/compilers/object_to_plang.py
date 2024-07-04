@@ -98,13 +98,14 @@ def compile(pointer, obj):
     pointers_pos[pointer] = {}
 
     # Get the pointer names
-    pointers_names = get_pointer_names(pointer)
+    schema_pointers_names = get_pointer_names(pointer)
+    shema_pointer_pos = get_pointer_pos("=", pointer)
 
     # The schema is expected at position 0
-    raw_schema = pointers_names[0]
+    raw_schema = schema_pointers_names[0]
     schema = parse_schema(raw_schema)
 
-    compiled_result = process_object(schema, obj)
+    compiled_result = f"${shema_pointer_pos}{process_object(schema, obj)}"
     return compiled_result
 
 # Example usage
