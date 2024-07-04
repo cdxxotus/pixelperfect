@@ -115,12 +115,13 @@ def process_object(schema, obj):
                 if value[0]=="+":
                     const_names=get_pointer_names("+")
                     item_key=const_names[int(value[1:])]
+                    # print(f"item-key:{item_key}")
                     item_value=obj[item_key]
-                    print(f"item-key:{item_key}")
                 else:
                     item_value = obj[value]
                 if key=="*":
                     compiled_item[idx] = f"*({item_value})"
+                    # print(f"compiled_item[idx]:{compiled_item[idx]}")
                 elif key[0]=="+":
                     compiled_item[idx] = f"({item_value})"
                 else:
@@ -157,6 +158,8 @@ def compile(pointer, obj):
 
     processed_obj = process_object(schema, obj)
     stringified_obj = f"{processed_obj}"
+    stringified_obj = stringified_obj.replace("\\'","'")
+    # print(f"stringified_obj:{stringified_obj}:processed_obj:{processed_obj}")
     if stringified_obj[0]=="[" and stringified_obj[1] != "[":
         stringified_obj=replace_at_index(stringified_obj, 0, "{")
         stringified_obj=replace_at_index(stringified_obj, len(stringified_obj) - 1, "}")
@@ -265,7 +268,6 @@ def uncompile(compiled_str):
                         decoded_data = f"{decoded_data}\"{schema[0][key]}\":\"{pointer_name}\""
                         x_object=x_object+1
 
-    x_object=x_object+1
     decoded_data = ''.join(decoded_data)
     print(f"decoded:{decoded_data}")
 
@@ -296,7 +298,7 @@ data = [
 ]
 
 data_color_palet_response = {
-    "color_palet": """$\$[¾,"|ʹ,&|ャ,%|-,#|-,\(|両,\$|~,!|-,\)|-,\']""",
+    "color_palet": """$\$[¾,"|ʹ,&|ャ,%|-,#|-,\(|両,\$|~,!|-,\)|-,']""",
     "inference_time": 2.1053810119628906,
 }
 
@@ -308,13 +310,13 @@ uncompiled_data = uncompile(compiled_data)
 print("Uncompiled Data:")
 print(uncompiled_data)
 
-# corrupted_data = uncompile(f"{compiled_data[:5]}l{compiled_data[5:]}")
-# print("Corrupted Data:")
-# print(corrupted_data)
+corrupted_data = uncompile(f"{compiled_data[:5]}l{compiled_data[5:]}")
+print("Corrupted Data:")
+print(corrupted_data)
 
-# compiled_colorpaletresponse_data = compile("ui_color_palette_response", data_color_palet_response)
-# print("Compiled ColorPaletResonse Data:")
-# print(compiled_colorpaletresponse_data)
+compiled_colorpaletresponse_data = compile("ui_color_palette_response", data_color_palet_response)
+print("Compiled ColorPaletResonse Data:")
+print(compiled_colorpaletresponse_data)
 
 # uncompiled_colorpaletresponse_data = uncompile(compiled_colorpaletresponse_data)
 # print("Uncompiled ColorPaletResonse Data:")
