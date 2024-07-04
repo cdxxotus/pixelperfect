@@ -105,7 +105,7 @@ def compile(pointer, obj):
     raw_schema = schema_pointers_names[0]
     schema = parse_schema(raw_schema)
 
-    compiled_result = f"${shema_pointer_pos}{process_object(schema, obj)}".replace(" ", "").replace("None", "-")
+    compiled_result = f"${shema_pointer_pos}{process_object(schema, obj)}".replace(" ", "").replace("None", "-").replace("],[", '|').replace("[[", "[").replace("]]", "]")
     return compiled_result
 
 # Example usage
