@@ -7,9 +7,11 @@ import random
 
 # Function to create a backup of the file
 def create_backup(file_path):
-    backup_path = f"{file_path}.bak"
-    shutil.copy(file_path, backup_path)
-    print(f"Backup created at {backup_path}")
+    backup_dir = os.path.join(os.path.dirname(file_path), '.retired')
+    timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+    os.makedirs(backup_dir, exist_ok=True)
+    backup_file_path = os.path.join(backup_dir, f'{os.path.basename(file_path)}.{timestamp}')
+    shutil.copy2(file_path, backup_file_path)
 
 # Function to read the input file
 def read_file(file_path):
@@ -21,14 +23,6 @@ def write_file(file_path, lines):
     with open(file_path, 'w', encoding='utf-8') as f:
         f.writelines(lines)
     print("Updated file has been saved.")
-
-# Function to create a backup of the file
-def create_backup(file_path):
-    timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-    backup_dir = os.path.join(os.path.dirname(file_path), '.retired')
-    os.makedirs(backup_dir, exist_ok=True)
-    backup_file_path = os.path.join(backup_dir, f'{os.path.basename(file_path)}.{timestamp}')
-    shutil.copy2(file_path, backup_file_path)
 
 # Function to display and handle duplicate translations one by one
 def handle_duplicates_one_by_one(emoji, texts, line_indices):
