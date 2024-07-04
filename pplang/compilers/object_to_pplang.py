@@ -169,7 +169,7 @@ def process_object(schema, obj):
                 idx += 1
 
         return compiled_item
-    else:
+    elif schema=="@":
         compiled_item = ""
         char_gen = next_char(obj)
         [dictionary, dictionary_pixels] = get_dictionary(schema)
