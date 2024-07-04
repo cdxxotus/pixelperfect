@@ -17,7 +17,7 @@ def create_backup(file_path):
 def read_file(file_path):
     with open(file_path, 'r', encoding='utf-8') as file:
         return file.readlines()
-    
+
 # Function to write updated lines back to the file
 def write_file(file_path, lines):
     with open(file_path, 'w', encoding='utf-8') as f:
@@ -191,21 +191,36 @@ def create_duplicate(emoji, texts):
 # Function to generate a unique Unicode character
 def generate_unique_unicode(emoji_dict):
     existing_unicodes = set(emoji_dict.keys())
-    
     # Range of Unicode characters to choose from
-    unicode_start = 0x1F300  # Starting point of Unicode block for emojis
-    unicode_end = 0x1F5FF  # Ending point of Unicode block for emojis
+    unicode_start = 0x1F300 # Starting point of Unicode block for emojis
+    unicode_end = 0x1F5FF # Ending point of Unicode block for emojis
 
     while True:
         new_unicode = chr(random.randint(unicode_start, unicode_end))
         if new_unicode not in existing_unicodes:
             return new_unicode
 
-# Function to repair all duplicates by making unicodes unique
+# Function to repair all duplicates by making unicodes unique and fixing faux-amis
 def repair_all(emoji_dict, lines, line_indices_dict):
     existing_unicodes = set(emoji_dict.keys())
     new_emoji_dict = defaultdict(list)
     new_lines = lines[:]
+    line_indices_to_delete = []
+
+    # Identify faux-amis and keep only the most recent translation
+    all_translations = defaultdict(list)
+    for emoji, texts in emoji_dict.items():
+        for text, line_index in zip(texts, line_indices_dict[emoji]):
+            all_translations[text].append((emoji, line_index))
+
+    for text, emoji_line_indices in all_translations.items():
+        if len(emoji_line_indices) > 1:
+            # Sort by line index to find the most recent translation
+            emoji_line_indices.sort(key=lambda x: x[1], reverse=True)
+            most_recent = emoji_line_indices[0]
+            for emoji, line_index in emoji_line_indices[1:]:
+                line_indices_to_delete.append(line_index)
+                emoji_dict[emoji].remove(text)
 
     for emoji, texts in emoji_dict.items():
         unique_emoji = emoji
@@ -221,6 +236,9 @@ def repair_all(emoji_dict, lines, line_indices_dict):
             else:
                 new_emoji_dict[unique_emoji].append(text)
                 existing_unicodes.add(unique_emoji)
+
+    # Delete lines marked for removal
+    new_lines = [line for index, line in enumerate(new_lines) if index not in line_indices_to_delete]
 
     return new_emoji_dict, new_lines
 
@@ -268,7 +286,6 @@ def choose_duplicate_method():
 
 # Function to save the updated file
 def save_updated_file(file_path, lines_to_delete, lines):
-
     lines_to_delete = set(lines_to_delete)
     updated_lines = [line for index, line in enumerate(lines) if index not in lines_to_delete]
 
@@ -282,18 +299,17 @@ def save_updated_file(file_path, lines_to_delete, lines):
 def extract_first_unicode_character(lines):
     emoji_dict = defaultdict(list)
     line_indices_dict = defaultdict(list)
-    
     for index, line in enumerate(lines):
-        first_char = line[0]
-        remaining_text = line[1:].strip()
-        if remaining_text:  # Only process non-empty lines
+        if line.strip(): # Only process non-empty lines
+            first_char = line[0]
+            remaining_text = line[1:].strip()
             emoji_dict[first_char].append(remaining_text)
             line_indices_dict[first_char].append(index)
 
     return emoji_dict, line_indices_dict
 
 # File path to read from
-file_path = 'pointers/@'  # Replace with your file path
+file_path = 'pointers/@' # Replace with your file path
 
 # Read the input text from the file
 lines = read_file(file_path)
@@ -328,7 +344,7 @@ if concept_choice == '1':
         lines_to_delete.extend(line_indices_to_delete)
     elif duplicate_method_choice == '5':
         emoji_dict, updated_lines = repair_all(emoji_dict, lines, line_indices_dict)
-        lines = updated_lines  # Update lines with the repaired content
+        lines = updated_lines # Update lines with the repaired content
 
     save_updated_file(file_path, lines_to_delete, lines)
 
