@@ -59,7 +59,7 @@ def describe_ui():
         inference_time = end_time - start_time
         logging.info(f"Inference time: {inference_time:.2f} seconds")
 
-        return json.dumps({'os_home_screen_description': generated_text, 'inference_time': inference_time}, indent=4)
+        return object_to_pplang.compile("os_home_screen_description_response", {'os_home_screen_description': generated_text, 'inference_time': inference_time})
 
     except Exception as e:
         logging.error("Error processing request: %s", e)

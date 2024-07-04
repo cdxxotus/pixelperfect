@@ -172,9 +172,7 @@ async function getHomeScreenDescription() {
     const response = await axios.post(
       "http://localhost:5000/get_home_screen_description"
     )
-    const osDescription = response.data.os_home_screen_description
-    console.log("Home screen description:", osDescription)
-    return osDescription
+    return response.data
   } catch (error) {
     console.error("Error getting home screen description:", error)
   }
@@ -188,18 +186,16 @@ async function getColorPalet(osDescription) {
         text: osDescription,
       }
     )
-    const colorPalette = response.data
-    console.log("Color palette:", colorPalette)
-    return colorPalette
+    return response.data
   } catch (error) {
     console.error("Error getting color palette:", error)
   }
 }
 
 const init = async () => {
-  const osDescription = await getHomeScreenDescription()
-  if (osDescription) {
-    const colorPalette = await getColorPalet(osDescription)
+  const osHomeScreeDescription = await getHomeScreenDescription()
+  if (osHomeScreeDescription) {
+    const colorPalette = await getColorPalet(osHomeScreeDescription)
     console.log("Final color palette:", colorPalette)
   }
 }

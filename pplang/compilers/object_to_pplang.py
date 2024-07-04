@@ -30,10 +30,25 @@ def ensure_size(lst, index):
     if len(lst) <= index:
         lst.extend([None] * (index + 1 - len(lst)))
 
+def get_dictionary(pointer):
+    dictionary = {}
+    dictionary_pixels = []
+    try:
+        with open(f"pplang/pointers/{pointer}", 'r') as file:
+            for line in file:
+                if line:
+                    pixel = line[0]
+                    human = line.strip()[1:]
+                    dictionary[human] = pixel
+                    dictionary_pixels.append(pixel)
+        return [dictionary, dictionary_pixels]
+    except FileNotFoundError:
+        logging.error(f"Pointer file not found: {pointer}")
+
 def get_pointer_names(pointer):
     if pointer in pointers_names:
         return pointers_names[pointer]
-    
+
     self_pointers_names = []
     try:
         with open(f"pplang/pointers/{pointer}", 'r') as file:
@@ -48,25 +63,28 @@ def get_pointer_names(pointer):
                         self_pointers_names[index] = value
     except FileNotFoundError:
         logging.error(f"Pointer file not found: {pointer}")
-    
+
     pointers_names[pointer] = self_pointers_names
     return self_pointers_names
 
 def parse_schema(schema):
-    try:
-        formatted_string = schema.replace("{", '{"').replace("}", '"}').replace(":", '": "').replace(",", '", "')
-        return json.loads(formatted_string)
-    except json.JSONDecodeError as e:
-        logging.error(f"Failed to parse schema: {e}")
-        return {}
-    
+    formatted_string = schema.replace("{", '{"').replace("}", '"}').replace(":", '": "').replace(",", '", "')
+    if formatted_string[0] == "[" or formatted_string == "{":
+        try:
+            return json.loads(formatted_string)
+        except json.JSONDecodeError as e:
+            logging.error(f"Failed to parse schema: {e}")
+            return {}
+    else:
+        return formatted_string
+
 def get_pointer_pos(pointers_pos, pointer, name):
     if pointer not in pointers_pos:
         pointers_pos[pointer] = {}
-    
+
     if name in pointers_pos[pointer]:
         return pointers_pos[pointer][name]
-    
+
     try:
         with open(f"pplang/pointers/{pointer}", 'r') as file:
             for line in file:
@@ -81,8 +99,33 @@ def get_pointer_pos(pointers_pos, pointer, name):
                             return index
     except FileNotFoundError:
         logging.error(f"Pointer file not found: {pointer}")
-    
+
     return None
+
+def translate_with_priority(big_string, translations):
+    # Sort dictionary keys by length in descending order
+    sorted_keys = sorted(translations.keys(), key=len, reverse=True)
+
+    i = 0
+    max_key_length = len(sorted_keys[0]) if sorted_keys else 0
+    while i < len(big_string):
+        matched = False
+        # Start with the maximum length of the keys and decrease to 2
+        for length in range(max_key_length, 1, -1):
+            if i + length > len(big_string):
+                continue
+            for key in sorted_keys:
+                if len(key) == length and big_string[i:i+len(key)] == key:
+                    yield translations[key]
+                    i += len(key)
+                    matched = True
+                    break
+            if matched:
+                break
+        if not matched:
+            # If no match, yield the current character and move to the next
+            yield big_string[i]
+            i += 1
 
 def process_object(schema, obj):
     self_pointers_pos = {}
@@ -101,41 +144,54 @@ def process_object(schema, obj):
                     compiled_item[idx] = key_pointer_index
                     idx += 1
             compiled_result.append(compiled_item)
-    
+
         return compiled_result
-    else:
+    elif isinstance(schema, dict):
         compiled_item = [None] * len(schema)
         idx = 0
         for key, value in schema.items():
-            if value in obj or value[0]=="+":
+            if value in obj or value[0] == "+":
                 if idx == 0:
                     self_pointers_pos[key] = {}
-                if value[0]=="+":
-                    const_names=get_pointer_names("+")
-                    item_key=const_names[int(value[1:])]
-                    # print(f"item-key:{item_key}")
-                    item_value=obj[item_key]
+                if value[0] == "+":
+                    const_names = get_pointer_names("+")
+                    item_key = const_names[int(value[1:])]
+                    item_value = obj[item_key]
                 else:
                     item_value = obj[value]
-                if key=="*":
+                if key == "*":
                     compiled_item[idx] = f"*({item_value})"
-                    # print(f"compiled_item[idx]:{compiled_item[idx]}")
-                elif key[0]=="+":
+                elif key[0] == "+":
                     compiled_item[idx] = f"({item_value})"
                 else:
                     key_pointer_index = get_pointer_pos(self_pointers_pos, key, item_value)
                     compiled_item[idx] = key_pointer_index
                 idx += 1
-    
+
         return compiled_item
-    
+    else:
+        compiled_item = ""
+        char_gen = next_char(obj)
+        [dictionary, dictionary_pixels] = get_dictionary(schema)
+        for char in char_gen:
+            if char in dictionary or (char == " " and "" in dictionary):
+                compiled_item = compiled_item + dictionary[char.strip()]
+            elif char in dictionary_pixels:
+                compiled_item = compiled_item + "\\" + char
+            else:
+                compiled_item = compiled_item + char
+        translated = ''.join(translate_with_priority(compiled_item, dictionary))  # Ensure generator is fully consumed
+        return translated
+
 # Convert numbers to corresponding Unicode characters and escape reserved characters, excluding floating point numbers
 def convert_num(num):
     if num.isdigit():
-        unicode_char = unicode_map[int(num)]
-        if unicode_char in reserved_chars:
-            return f"\{unicode_char}"
-        return unicode_char
+        index = int(num)
+        if 0 <= index < len(unicode_map):
+            unicode_char = unicode_map[index]
+            if unicode_char in reserved_chars:
+                return f"\\{unicode_char}"
+            return unicode_char
     return num
 
 def replace_at_index(s, index, replacement):
@@ -156,14 +212,13 @@ def compile(pointer, obj):
 
     processed_obj = process_object(schema, obj)
     stringified_obj = f"{processed_obj}"
-    stringified_obj = stringified_obj.replace("\\'","'")
-    # print(f"stringified_obj:{stringified_obj}:processed_obj:{processed_obj}")
-    if stringified_obj[0]=="[" and stringified_obj[1] != "[":
-        stringified_obj=replace_at_index(stringified_obj, 0, "{")
-        stringified_obj=replace_at_index(stringified_obj, len(stringified_obj) - 1, "}")
+    stringified_obj = stringified_obj.replace("\\'", "'")
 
+    if stringified_obj[0] == "[" and stringified_obj[1] != "[":
+        stringified_obj = replace_at_index(stringified_obj, 0, "{")
+        stringified_obj = replace_at_index(stringified_obj, len(stringified_obj) - 1, "}")
 
-    compiled_result = f"${schema_pointer_pos}{stringified_obj}".replace('\\\\','\\').replace("'*","*").replace("'`","`").replace("`'","`").replace(" ", "").replace("None", "-").replace("],[", '|').replace("[[", "[").replace("]]", "]").replace(")'", ")").replace("'(", "(")
+    compiled_result = f"${schema_pointer_pos}{stringified_obj}".replace('\\\\', '\\').replace("'*", "*").replace("'`", "`").replace("`'", "`").replace(" ", "").replace("None", "-").replace("],[", '|').replace("[[", "[").replace("]]", "]").replace(")'", ")").replace("'(", "(")
     print(f"before unicode:: {compiled_result}")
 
     # Regex to match digits that are not part of floating point numbers
@@ -182,128 +237,106 @@ def next_char(compiled_str):
 def uncompile(compiled_str):
     start_time = time.time()
 
-    # Initialize state variables
-    print(f"uncompiling:{compiled_str}")
     char_gen = next_char(compiled_str)
     decoded_data = ""
     is_escaped = False
-    schema=[]
-    parent_schema=[]
-    current_operation=""
+    schema = []
+    parent_schema = []
+    current_operation = ""
     x_schema = 0
-    x_object=0
+    x_object = 0
     decodeding_up_to = ""
-    in_nested_build=False
+    in_nested_build = False
 
     for char in char_gen:
         decodeding_up_to = decodeding_up_to + char
-        # print(f"decoded_data:{decoded_data}")
-        # print(f"schema:{schema}")
-        # print(f"parent_schema:{parent_schema}")
-        # print(f"decodeding_up_to:{decodeding_up_to}")
-        # print(f"last-currentoperation:{current_operation}")
-        # print(f"xobject:{x_object}")
-        if char == '\\' and is_escaped == False:
-            # Set escape flag
+        if char == '\\' and not is_escaped:
             is_escaped = True
-        elif char=="{" and is_escaped==False:
-            x_object=0
+        elif char == "{" and not is_escaped:
+            x_object = 0
             decoded_data = f"{decoded_data}{char}"
-            current_operation="{"
-        elif char=="}" and is_escaped==False:
+            current_operation = "{"
+        elif char == "}" and not is_escaped:
             decoded_data = f"{decoded_data}{char}"
-        elif char=="(" and is_escaped == False:
-            if in_nested_build == False:
-                key=list(schema[0].keys())[x_object]
-                if  schema[0][key][0]=="+":
-                    pointer_name=get_pointer_names("+")[int(schema[0][key][1:])]
+        elif char == "(" and not is_escaped:
+            if not in_nested_build:
+                key = list(schema[0].keys())[x_object]
+                if schema[0][key][0] == "+":
+                    pointer_name = get_pointer_names("+")[int(schema[0][key][1:])]
                     decoded_data = f"{decoded_data}\"{pointer_name}\":\""
                 else:
                     decoded_data = f"{decoded_data}\"{schema[0][key]}\":\""
             current_operation = "("
-        elif char==")" and is_escaped == False:
-            if in_nested_build==True:
-                schema=parent_schema
-                in_nested_build=False
+        elif char == ")" and not is_escaped:
+            if in_nested_build:
+                schema = parent_schema
+                in_nested_build = False
             else:
                 decoded_data = f"{decoded_data}\""
-        elif char == '$' and is_escaped == False:
-            x_object=0
-            current_operation="$"
-        elif char=="[" and is_escaped==False:
-            x_object=0
+        elif char == '$' and not is_escaped:
+            x_object = 0
+            current_operation = "$"
+        elif char == "[" and not is_escaped:
+            x_object = 0
             decoded_data = f"{decoded_data}{char}"
-            current_operation="[{"
-        elif (char == ',') and is_escaped==False:
+            current_operation = "[{"
+        elif char == ',' and not is_escaped:
             decoded_data = f"{decoded_data}{char}"
-            x_object=x_object+1
-        elif char == ']' and is_escaped==False:
-            if current_operation=="{":
+            x_object += 1
+        elif char == ']' and not is_escaped:
+            if current_operation == "{":
                 decoded_data = f"{decoded_data}{'}'}{char}"
             else:
                 decoded_data = f"{decoded_data}{char}"
             current_operation = "{"
             x_object = 0
-        elif char == '|' and is_escaped==False:
-            if current_operation=="{":
+        elif char == '|' and not is_escaped:
+            if current_operation == "{":
                 decoded_data = f"{decoded_data}{'}'},{'{'}"
             else:
                 decoded_data = f"{decoded_data}],["
-            x_object=0
+            x_object = 0
             current_operation = "{"
         else:
-            # Convert Unicode character to its index
-            is_escaped=False
-            pos =int(unicode_to_index[char])
+            is_escaped = False
+            pos = int(unicode_to_index.get(char, -1))
 
-            if current_operation=="$":
+            if current_operation == "$":
                 schema_list_pointers_names = get_pointer_names("=")
-                schema_name=schema_list_pointers_names[pos]
-                raw_schema=get_pointer_names(schema_name)[0]
+                schema_name = schema_list_pointers_names[pos]
+                raw_schema = get_pointer_names(schema_name)[0]
                 unkown_schema = parse_schema(raw_schema)
                 parent_schema = schema
-                if isinstance(unkown_schema,dict):
-                    schema=[]
-                    ensure_size(schema, 0)
-                    schema[0]=unkown_schema
+                if isinstance(unkown_schema, dict):
+                    schema = [unkown_schema]
                 else:
-                    schema=unkown_schema
-                current_operation=""
-            elif current_operation=="(":
+                    schema = unkown_schema
+                current_operation = ""
+            elif current_operation == "(":
                 decoded_data = f"{decoded_data}{char}"
-            elif len(current_operation) == 2 and f"{current_operation[0]}{current_operation[1]}" == "[{":
-                x_object=0
-                keys=list(schema[0].keys())
-                if len(keys)>x_object:
-                    key=keys[x_object]
-                    if char=="-":
-                        decoded_data = f"{decoded_data}{'{'}\"{schema[0][key]}\":null"
-                    else:
-                        pointer_names=get_pointer_names(key)
-                        if len(pointer_names)-1<pos:
-                            pointer_name="null"
-                        else:
-                            pointer_name=get_pointer_names(key)[pos]
+            elif current_operation == "[{":
+                key = list(schema[0].keys())[x_object]
+                if char == "-":
+                    decoded_data = f"{decoded_data}{'{'}\"{schema[0][key]}\":null"
+                else:
+                    pointer_names = get_pointer_names(key)
+                    pointer_name = pointer_names[pos] if len(pointer_names) > pos else "null"
                     decoded_data = f"{decoded_data}{'{'}\"{schema[0][key]}\":\"{pointer_name}\""
-                    current_operation = "{"
-            elif len(current_operation) == 1 and f"{current_operation[0]}" == "{":
-                # print(f"schema:{schema}:x_object:{x_object}:decoded_data:{decoded_data}")
-                key=list(schema[0].keys())[x_object]
-                if char=="-":
+                current_operation = "{"
+            elif current_operation == "{":
+                key = list(schema[0].keys())[x_object]
+                if char == "-":
                     decoded_data = f"{decoded_data}\"{schema[0][key]}\":null"
-                elif char=="*":
-                    in_nested_build=True
+                elif char == "*":
+                    in_nested_build = True
                     decoded_data = f"{decoded_data}\"{schema[0][key]}\":"
                 else:
-                    pointer_names=get_pointer_names(key)
-                    if len(pointer_names)>pos:
-                        pointer_name=pointer_names[pos]
-                        decoded_data = f"{decoded_data}\"{schema[0][key]}\":\"{pointer_name}\""
+                    pointer_names = get_pointer_names(key)
+                    pointer_name = pointer_names[pos] if len(pointer_names) > pos else "null"
+                    decoded_data = f"{decoded_data}\"{schema[0][key]}\":\"{pointer_name}\""
 
     decoded_data = ''.join(decoded_data)
-    print(f"decoded:{decoded_data}")
 
-    # Convert string back to list
     try:
         compiled_list = json.loads(decoded_data)
     except json.JSONDecodeError as e:
@@ -334,22 +367,28 @@ data_color_palet_response = {
     "inference_time": 2.1053810119628906,
 }
 
-compiled_data = compile(pointer, data)
-print("Compiled Data:")
-print(compiled_data)
+data_string = "hello, what's up today? anything wou would like to discuss?"
 
-uncompiled_data = uncompile(compiled_data)
-print("Uncompiled Data:")
-print(uncompiled_data)
+# compiled_data = compile(pointer, data)
+# print("Compiled Data:")
+# print(compiled_data)
 
-corrupted_data = uncompile(f"{compiled_data[:5]}l{compiled_data[5:]}")
-print("Corrupted Data:")
-print(corrupted_data)
+# uncompiled_data = uncompile(compiled_data)
+# print("Uncompiled Data:")
+# print(uncompiled_data)
 
-compiled_colorpaletresponse_data = compile("ui_color_palette_response", data_color_palet_response)
-print("Compiled ColorPaletResonse Data:")
-print(compiled_colorpaletresponse_data)
+# corrupted_data = uncompile(f"{compiled_data[:5]}l{compiled_data[5:]}")
+# print("Corrupted Data:")
+# print(corrupted_data)
 
-uncompiled_colorpaletresponse_data = uncompile(compiled_colorpaletresponse_data)
-print("Uncompiled ColorPaletResonse Data:")
-print(uncompiled_colorpaletresponse_data)
+# compiled_colorpaletresponse_data = compile("ui_color_palette_response", data_color_palet_response)
+# print("Compiled ColorPaletResonse Data:")
+# print(compiled_colorpaletresponse_data)
+
+# uncompiled_colorpaletresponse_data = uncompile(compiled_colorpaletresponse_data)
+# print("Uncompiled ColorPaletResonse Data:")
+# print(uncompiled_colorpaletresponse_data)
+
+compiled_string = compile("string", data_string)
+print("Compiled compiled_string Data:")
+print(compiled_string)
