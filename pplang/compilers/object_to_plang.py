@@ -1,5 +1,13 @@
+import logging
+import json
 import re
 
+# Configure logging
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+
+# Use a dictionary to store pointers
+pointers = {}
+pointers_pos={}
 # Function to ensure the list is big enough to hold the value at the given index
 def ensure_size(lst, index):
     while len(lst) <= index:
@@ -15,47 +23,80 @@ def get_pointer_names(pointer):
 
             # Ensure the line is not empty
             if line:
-                # Extract the index from the first character
-                index = int(line[0])
-                # Extract the value from the rest of the line
-                value = line[1:]
+                match = re.match(r"(\d+)(.+)", line)
+                if match:
+                    index = int(match.group(1))
+                    value = match.group(2).strip()
 
-                # Ensure the list is big enough
-                ensure_size(pointers_names, index)
+                    # Ensure the list is big enough
+                    ensure_size(pointers_names, index)
 
-                # Place the value at the correct index in the list
-                pointers_names[index] = value
+                    # Place the value at the correct index in the list
+                    pointers_names[index] = value
 
+                    logging.debug(f"Index {index}: {value}")
+
+    logging.debug(f"Pointer names for {pointer}: {pointers_names}")
+    pointers[pointer] = pointers_names
     return pointers_names
 
 def parse_schema(schema):
-    # Remove whitespace
-    schema = schema.replace(" ", "")
+    logging.debug(f"Raw schema: {schema}")
 
-    # Check if the schema is an array or an object
-    if schema.startswith("[") and schema.endswith("]"):
-        is_array = True
-        # Remove the surrounding brackets
-        schema = schema[1:-1]
-    elif schema.startswith("{") and schema.endswith("}"):
-        is_array = False
-        # Remove the surrounding braces
-        schema = schema[1:-1]
-    else:
-        raise ValueError("Invalid schema format")
+    # Replace the curly braces and colons to match the desired JSON format
+    formatted_string = schema.replace("{", '{"').replace("}", '"}').replace(":", '": "').replace(",", '", "')
 
-    # Extract the keys
-    pattern = r'{([^:]+):([^,}]+)}'
-    matches = re.findall(pattern, schema)
+    # Parse the formatted string into a Python object
+    parsed_object = json.loads(formatted_string)
 
-    if is_array:
-        result = [{key: None} for key, _ in matches]
-    else:
-        result = {key: None for key, _ in matches}
+    # Print the resulting object
+    logging.debug(f"Parsed schema: {parsed_object}")
+    return parsed_object
 
-    return result
+def get_pointer_pos(pointer, name):
+    if pointer not in pointers:
+        pointers[pointer]={}
+    if name in pointers[pointer]:
+        return pointers[pointer][name]
+    with open(f"pplang/pointers/{pointer}", 'r') as file:
+        for line in file:
+            # Remove any leading/trailing whitespace characters
+            line = line.strip()
+
+            # Ensure the line is not empty
+            if line:
+                match = re.match(r"(\d+)(.+)", line)
+                if match:
+                    index = int(match.group(1))
+                    value = match.group(2).strip()
+
+                    if value == name:
+                        pointers[pointer][name] = index
+                        return index
+    return None
+
+def process_object(schema, obj):
+    logging.debug(f"Processing object with schema: {schema} and object: {obj}")
+
+    if isinstance(schema, list):
+        compiled_result = []
+        for item in obj:
+            compiled_item = [None] * len(schema[0])  # Initialize the compiled_item list with the correct size
+            idx = 0
+            for key, value in schema[0].items():
+                if value in item:
+                    pointers_pos[key] = {}
+                    item_value = item[value]
+                    key_pointer_index = get_pointer_pos(key, item_value)
+                    compiled_item[idx] = key_pointer_index
+                    idx += 1
+            compiled_result.append(compiled_item)
+
+        return compiled_result
 
 def compile(pointer, obj):
+    pointers_pos[pointer] = {}
+
     # Get the pointer names
     pointers_names = get_pointer_names(pointer)
 
@@ -63,39 +104,8 @@ def compile(pointer, obj):
     raw_schema = pointers_names[0]
     schema = parse_schema(raw_schema)
 
-    def find_pointer_index(pointers_names, key):
-        try:
-            return pointers_names.index(key)
-        except ValueError:
-            return None
-
-    def process_object(schema, obj):
-        if isinstance(schema, list):
-            compiled_result = []
-            for item in obj:
-                compiled_item = {}
-                for entry in schema:
-                    for key in entry.keys():
-                        if key in item:
-                            value = item[key]
-                            key_pointer_index = find_pointer_index(pointers_names, key)
-                            value_pointer_index = find_pointer_index(pointers_names, value)
-                            if key_pointer_index is not None and value_pointer_index is not None:
-                                compiled_item[key_pointer_index] = value_pointer_index
-                compiled_result.append(compiled_item)
-        else:
-            compiled_result = {}
-            for key in schema.keys():
-                if key in obj:
-                    value = obj[key]
-                    key_pointer_index = find_pointer_index(pointers_names, key)
-                    value_pointer_index = find_pointer_index(pointers_names, value)
-                    if key_pointer_index is not None and value_pointer_index is not None:
-                        compiled_result[key_pointer_index] = value_pointer_index
-
-        return compiled_result
-
-    return process_object(schema, obj)
+    compiled_result = process_object(schema, obj)
+    return compiled_result
 
 # Example usage
 pointer = 'ui_color_palette_schema'  # The pointer file should be located at pplang/pointers/ui_color_palette_schema
