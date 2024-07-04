@@ -13,8 +13,7 @@ reserved_chars = set()
 
 def load_reserved_chars(filename):
     with open(filename, 'r') as file:
-        for line in file:
-            reserved_chars.update(line.strip())
+            reserved_chars.update(file.read().strip())
 
 def load_unicode_map(filename):
     with open(filename, 'r') as file:
