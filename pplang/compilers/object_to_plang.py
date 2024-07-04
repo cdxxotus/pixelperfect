@@ -105,15 +105,59 @@ def compile(pointer, obj):
     raw_schema = schema_pointers_names[0]
     schema = parse_schema(raw_schema)
 
-    compiled_result = f"${shema_pointer_pos}{process_object(schema, obj)}"
+    compiled_result = f"${shema_pointer_pos}{process_object(schema, obj)}".replace(" ", "")
     return compiled_result
 
 # Example usage
 pointer = 'ui_color_palette_schema'  # The pointer file should be located at pplang/pointers/ui_color_palette_schema
-obj_array = [
-    {'color': 'Alice Blue', 'type': 'Subtle background color'},
-    {'color': 'White Smoke', 'type': 'Alert color'}
+data = [
+    {
+        "color": "Beige",
+        "type": "Secondary color",
+        "score": 0.9999566078186035
+    },
+    {
+        "color": "Cyan",
+        "type": "Notification highlight color",
+        "score": 0.9999328851699829
+    },
+    {
+        "color": "Pink",
+        "type": "Accent color",
+        "score": 0.9999185800552368
+    },
+    {
+        "color": "AliceBlue",
+        "type": "Text color",
+        "score": 0.999894380569458
+    },
+    {
+        "color": "WhiteSmoke",
+        "type": "Border color",
+        "score": 0.9998866319656372
+    },
+    {
+        "color": "Purple",
+        "type": "Highlight color",
+        "score": 0.9998842477798462
+    },
+    {
+        "color": "Azure",
+        "type": "Main color",
+        "score": 0.9998782873153687
+    },
+    {
+        "color": "AntiqueWhite",
+        "type": "Alert color",
+        "score": 0.9998581409454346
+    },
+    {
+        "color": "DarkGray",
+        "type": "Subtle background color",
+        "score": 0.9996941089630127
+    }
 ]
 
-compiled_object_array = compile(pointer, obj_array)
+
+compiled_object_array = compile(pointer, data)
 print(compiled_object_array)
