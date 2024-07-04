@@ -176,22 +176,31 @@ def uncompile(compiled_str):
                 schema = parse_schema(raw_schema)
                 current_operation=""
             elif len(current_operation) == 2 and f"{current_operation[0]}{current_operation[1]}" == "[{":
-                key=list(schema[0].keys())[x_object]
-                if char=="-":
-                    decoded_data = f"{decoded_data}{'{'}\"{schema[0][key]}\":null"
-                else:
-                    pointer_name=get_pointer_names(key)[pos]
+                x_object=0
+                keys=list(schema[0].keys())
+                if len(keys)>x_object:
+                    key=keys[x_object]
+                    if char=="-":
+                        decoded_data = f"{decoded_data}{'{'}\"{schema[0][key]}\":null"
+                    else:
+                        pointer_names=get_pointer_names(key)
+                        if len(pointer_names)-1<pos:
+                            pointer_name="null"
+                        else:
+                            pointer_name=get_pointer_names(key)[pos]
+                    x_object=1
                     decoded_data = f"{decoded_data}{'{'}\"{schema[0][key]}\":\"{pointer_name}\""
-                x_object=1
-                current_operation = "{"
+                    current_operation = "{"
             elif len(current_operation) == 1 and f"{current_operation[0]}" == "{":
                 key=list(schema[0].keys())[x_object]
                 if char=="-":
                     decoded_data = f"{decoded_data}\"{schema[0][key]}\":null"
                 else:
-                    pointer_name=get_pointer_names(key)[pos]
-                    decoded_data = f"{decoded_data}\"{schema[0][key]}\":\"{pointer_name}\""
-                x_object=x_object+1
+                    pointer_names=get_pointer_names(key)
+                    if len(pointer_names)>pos:
+                        pointer_name=pointer_names[pos]
+                        decoded_data = f"{decoded_data}\"{schema[0][key]}\":\"{pointer_name}\""
+                        x_object=x_object+1
 
     decoded_data = ''.join(decoded_data)
 
@@ -228,3 +237,7 @@ print(compiled_data)
 uncompiled_data = uncompile(compiled_data)
 print("Uncompiled Data:")
 print(uncompiled_data)
+
+corrupted_data = uncompile(f"{compiled_data[:5]}l{compiled_data[5:]}")
+print("Corrupted Data:")
+print(corrupted_data)
