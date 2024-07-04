@@ -188,16 +188,45 @@ def uncompile(compiled_str):
     decoded_data = ""
     is_escaped = False
     schema=[]
+    parent_schema=[]
     current_operation=""
     x_schema = 0
     x_object=0
+    decodeding_up_to = ""
+    in_nested_build=False
 
     for char in char_gen:
-        if char=="*":
-            current_operation="*"
+        decodeding_up_to = decodeding_up_to + char
+        # print(f"decoded_data:{decoded_data}")
+        # print(f"schema:{schema}")
+        # print(f"parent_schema:{parent_schema}")
+        # print(f"decodeding_up_to:{decodeding_up_to}")
+        # print(f"last-currentoperation:{current_operation}")
+        # print(f"xobject:{x_object}")
         if char == '\\' and is_escaped == False:
             # Set escape flag
             is_escaped = True
+        elif char=="{" and is_escaped==False:
+            x_object=0
+            decoded_data = f"{decoded_data}{char}"
+            current_operation="{"
+        elif char=="}" and is_escaped==False:
+            decoded_data = f"{decoded_data}{char}"
+        elif char=="(" and is_escaped == False:
+            if in_nested_build == False:
+                key=list(schema[0].keys())[x_object]
+                if  schema[0][key][0]=="+":
+                    pointer_name=get_pointer_names("+")[int(schema[0][key][1:])]
+                    decoded_data = f"{decoded_data}\"{pointer_name}\":\""
+                else:
+                    decoded_data = f"{decoded_data}\"{schema[0][key]}\":\""
+            current_operation = "("
+        elif char==")" and is_escaped == False:
+            if in_nested_build==True:
+                schema=parent_schema
+                in_nested_build=False
+            else:
+                decoded_data = f"{decoded_data}\""
         elif char == '$' and is_escaped == False:
             x_object=0
             current_operation="$"
@@ -207,11 +236,13 @@ def uncompile(compiled_str):
             current_operation="[{"
         elif (char == ',') and is_escaped==False:
             decoded_data = f"{decoded_data}{char}"
+            x_object=x_object+1
         elif char == ']' and is_escaped==False:
             if current_operation=="{":
                 decoded_data = f"{decoded_data}{'}'}{char}"
             else:
                 decoded_data = f"{decoded_data}{char}"
+            current_operation = "{"
             x_object = 0
         elif char == '|' and is_escaped==False:
             if current_operation=="{":
@@ -230,6 +261,7 @@ def uncompile(compiled_str):
                 schema_name=schema_list_pointers_names[pos]
                 raw_schema=get_pointer_names(schema_name)[0]
                 unkown_schema = parse_schema(raw_schema)
+                parent_schema = schema
                 if isinstance(unkown_schema,dict):
                     schema=[]
                     ensure_size(schema, 0)
@@ -237,6 +269,8 @@ def uncompile(compiled_str):
                 else:
                     schema=unkown_schema
                 current_operation=""
+            elif current_operation=="(":
+                decoded_data = f"{decoded_data}{char}"
             elif len(current_operation) == 2 and f"{current_operation[0]}{current_operation[1]}" == "[{":
                 x_object=0
                 keys=list(schema[0].keys())
@@ -250,7 +284,6 @@ def uncompile(compiled_str):
                             pointer_name="null"
                         else:
                             pointer_name=get_pointer_names(key)[pos]
-                    x_object=1
                     decoded_data = f"{decoded_data}{'{'}\"{schema[0][key]}\":\"{pointer_name}\""
                     current_operation = "{"
             elif len(current_operation) == 1 and f"{current_operation[0]}" == "{":
@@ -258,13 +291,14 @@ def uncompile(compiled_str):
                 key=list(schema[0].keys())[x_object]
                 if char=="-":
                     decoded_data = f"{decoded_data}\"{schema[0][key]}\":null"
-                    x_object=x_object+1
+                elif char=="*":
+                    in_nested_build=True
+                    decoded_data = f"{decoded_data}\"{schema[0][key]}\":"
                 else:
                     pointer_names=get_pointer_names(key)
                     if len(pointer_names)>pos:
                         pointer_name=pointer_names[pos]
                         decoded_data = f"{decoded_data}\"{schema[0][key]}\":\"{pointer_name}\""
-                        x_object=x_object+1
 
     decoded_data = ''.join(decoded_data)
     print(f"decoded:{decoded_data}")
@@ -316,6 +350,6 @@ compiled_colorpaletresponse_data = compile("ui_color_palette_response", data_col
 print("Compiled ColorPaletResonse Data:")
 print(compiled_colorpaletresponse_data)
 
-# uncompiled_colorpaletresponse_data = uncompile(compiled_colorpaletresponse_data)
-# print("Uncompiled ColorPaletResonse Data:")
-# print(uncompiled_colorpaletresponse_data)
+uncompiled_colorpaletresponse_data = uncompile(compiled_colorpaletresponse_data)
+print("Uncompiled ColorPaletResonse Data:")
+print(uncompiled_colorpaletresponse_data)
