@@ -136,6 +136,7 @@ def uncompile(compiled_str):
     is_escaped = False
     schema=[]
     current_operation=""
+    previous_operation=""
     x_schema = 0
     x_array=0
     x_object=0
@@ -145,43 +146,61 @@ def uncompile(compiled_str):
             # Set escape flag
             is_escaped = True
         elif char == '$' and is_escaped == False:
-            # Handle schema pointer position (schema ID)
+            previous_operation=current_operation
             current_operation="$"
         elif char=="[" and is_escaped==False:
             x_array = 0;
             x_object=0
             decoded_data = f"{decoded_data}{char}"
+            previous_operation=current_operation
             current_operation="[{"
-        elif (char == ',' or char == ']') and is_escaped==False:
-            # Append delimiters directly
+        elif (char == ',') and is_escaped==False:
             decoded_data = f"{decoded_data}{char}"
-            current_operation=""
+        elif char == ']' and is_escaped==False:
+            if current_operation=="{":
+                decoded_data = f"{decoded_data}{'}'}{char}"
+            else:
+                decoded_data = f"{decoded_data}{char}"
+            x_object = 0
+            x_array=0
         elif char == '|' and is_escaped==False:
-            decoded_data = f"{decoded_data}],["
+            if current_operation=="{":
+                decoded_data = f"{decoded_data}{'}'},{'{'}"
+            else:
+                decoded_data = f"{decoded_data}],["
+            x_object=0
+            previous_operation=current_operation
             current_operation = "{"
         else:
             # Convert Unicode character to its index
             is_escaped=False
             pos =int(unicode_to_index[char])
+
             if current_operation=="$":
                 schema_list_pointers_names = get_pointer_names("=")
                 schema_name=schema_list_pointers_names[pos]
                 raw_schema=get_pointer_names(schema_name)[0]
                 schema = parse_schema(raw_schema)
-                print(f"Char: {char},pointers:{pointers_names}, pos:{pos}, schema_name:{schema_name},rawschema: {raw_schema}, schema: {schema}")
+                previous_operation=current_operation
                 current_operation=""
             elif len(current_operation) == 2 and f"{current_operation[0]}{current_operation[1]}" == "[{":
                 key=list(schema[0].keys())[x_object]
                 pointer_name=get_pointer_names(key)[pos]
                 decoded_data = f"{decoded_data}{'{'}\"{schema[0][key]}\":\"{pointer_name}\""
+                x_object=1
+                previous_operation=current_operation
+                current_operation = "{"
+            elif len(current_operation) == 1 and f"{current_operation[0]}" == "{":
+                keys=list(schema[0].keys())
+                key=list(schema[0].keys())[x_object]
+                pointer_name=get_pointer_names(key)[pos]
+                decoded_data = f"{decoded_data}\"{schema[0][key]}\":\"{pointer_name}\""
                 x_object=x_object+1
 
 
 
     decoded_data = ''.join(decoded_data)
 
-    print(f"Decoded data: {decoded_data}")
-    
     # Replace symbols with appropriate delimiters
     decoded_data = decoded_data.replace('|', '],[').replace('[', '[[').replace(']', ']]').replace('-', 'None')
 
@@ -192,25 +211,10 @@ def uncompile(compiled_str):
         logging.error(f"Failed to parse decoded data: {e}")
         return None
 
-    # Get the schema
-    schema_pointers_names = get_pointer_names(pointer)
-    raw_schema = schema_pointers_names[0] if schema_pointers_names else ""
-    schema = parse_schema(raw_schema)
-
-    # Reconstruct the object
-    reconstructed_obj = []
-    for item in compiled_list:
-        obj_item = {}
-        for idx, (key, value) in enumerate(schema[0].items()):
-            if item[idx] != 'None':
-                key_pointer_names = get_pointer_names(key)
-                obj_item[value] = key_pointer_names[int(item[idx])]
-        reconstructed_obj.append(obj_item)
-
     end_time = time.time()
     logging.warning(f"Uncompilation time: {end_time - start_time:.6f} seconds")
 
-    return reconstructed_obj
+    return compiled_list
 
 # Example usage
 pointer = 'ui_color_palette_schema'
