@@ -163,10 +163,10 @@ def compile(pointer, obj):
 
 
     compiled_result = f"${schema_pointer_pos}{stringified_obj}".replace('\\\\','\\').replace("'*","*").replace("'`","`").replace("`'","`").replace(" ", "").replace("None", "-").replace("],[", '|').replace("[[", "[").replace("]]", "]").replace(")'", ")").replace("'(", "(")
-    print(f"COMPILED:: {compiled_result}")
+    print(f"before unicode:: {compiled_result}")
 
-        # Regex to match digits that are not part of floating point numbers
-    parts = re.split(r'(\d+\.\d+|\d+|.)', compiled_result)
+    # Regex to match digits that are not part of floating point numbers
+    parts = re.split(r'(?<!\\)(\d+\.\d+|\d+|.)', compiled_result)
     unicode_result = ''.join(convert_num(part) if part.isdigit() else part for part in parts if part)
 
     end_time = time.time()
