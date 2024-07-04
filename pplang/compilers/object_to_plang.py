@@ -1,13 +1,29 @@
 import logging
 import json
 import re
+import time
 
 # Configure logging
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.WARNING, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Use a dictionary to store pointers
 pointers = {}
-pointers_pos={}
+pointers_pos = {}
+unicode_map = []
+reserved_chars = set()
+
+# Load the reserved characters from the reserved file
+with open("pplang/hard/reserved", 'r') as file:
+    for line in file:
+        line = line.strip()
+        reserved_chars.update(list(line))
+        
+# Load the Unicode characters from the reserved/unicodes file
+with open("pplang/hard/unicodes", 'r') as file:
+    for line in file:
+        line = line.strip()
+        unicode_map.extend(list(line))
+
 # Function to ensure the list is big enough to hold the value at the given index
 def ensure_size(lst, index):
     while len(lst) <= index:
@@ -55,7 +71,7 @@ def parse_schema(schema):
 
 def get_pointer_pos(pointer, name):
     if pointer not in pointers:
-        pointers[pointer]={}
+        pointers[pointer] = {}
     if name in pointers[pointer]:
         return pointers[pointer][name]
     with open(f"pplang/pointers/{pointer}", 'r') as file:
@@ -95,6 +111,8 @@ def process_object(schema, obj):
         return compiled_result
 
 def compile(pointer, obj):
+    start_time = time.time()  # Start time
+
     pointers_pos[pointer] = {}
 
     # Get the pointer names
@@ -106,7 +124,15 @@ def compile(pointer, obj):
     schema = parse_schema(raw_schema)
 
     compiled_result = f"${shema_pointer_pos}{process_object(schema, obj)}".replace(" ", "").replace("None", "-").replace("],[", '|').replace("[[", "[").replace("]]", "]")
-    return compiled_result
+    
+    # Convert numbers to corresponding Unicode characters and escape reserved characters
+    unicode_result = ''.join(f"\\{unicode_map[int(num)]}" if num.isdigit() and unicode_map[int(num)] in reserved_chars else unicode_map[int(num)] if num.isdigit() else num for num in re.findall(r'\d+|.', compiled_result))
+
+    end_time = time.time()  # End time
+    compilation_time = end_time - start_time
+    logging.warning(f"Compilation time: {compilation_time:.6f} seconds")  # Display time with microsecond precision
+
+    return unicode_result
 
 # Example usage
 pointer = 'ui_color_palette_schema'  # The pointer file should be located at pplang/pointers/ui_color_palette_schema
