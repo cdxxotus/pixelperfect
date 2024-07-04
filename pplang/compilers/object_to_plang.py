@@ -101,7 +101,8 @@ def process_object(schema, obj):
             idx = 0
             for key, value in schema[0].items():
                 if value in item:
-                    pointers_pos[key] = {}
+                    if idx == 0:
+                        pointers_pos[key] = {}
                     item_value = item[value]
                     key_pointer_index = get_pointer_pos(key, item_value)
                     compiled_item[idx] = key_pointer_index
