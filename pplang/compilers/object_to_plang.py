@@ -7,8 +7,7 @@ import time
 logging.basicConfig(level=logging.WARNING, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Use a dictionary to store pointers
-pointers = {}
-pointers_pos = {}
+pointers_names = {}
 unicode_map = []
 reserved_chars = set()
 
@@ -31,7 +30,7 @@ def ensure_size(lst, index):
 
 # Read the file and parse each line
 def get_pointer_names(pointer):
-    pointers_names = []
+    self_pointers_names = []
     with open(f"pplang/pointers/{pointer}", 'r') as file:
         for line in file:
             # Remove any leading/trailing whitespace characters
@@ -45,16 +44,16 @@ def get_pointer_names(pointer):
                     value = match.group(2).strip()
 
                     # Ensure the list is big enough
-                    ensure_size(pointers_names, index)
+                    ensure_size(self_pointers_names, index)
 
                     # Place the value at the correct index in the list
-                    pointers_names[index] = value
+                    self_pointers_names[index] = value
 
                     logging.debug(f"Index {index}: {value}")
 
     logging.debug(f"Pointer names for {pointer}: {pointers_names}")
-    pointers[pointer] = pointers_names
-    return pointers_names
+    pointers_names[pointer] = self_pointers_names
+    return self_pointers_names
 
 def parse_schema(schema):
     logging.debug(f"Raw schema: {schema}")
@@ -69,11 +68,11 @@ def parse_schema(schema):
     logging.debug(f"Parsed schema: {parsed_object}")
     return parsed_object
 
-def get_pointer_pos(pointer, name):
-    if pointer not in pointers:
-        pointers[pointer] = {}
-    if name in pointers[pointer]:
-        return pointers[pointer][name]
+def get_pointer_pos(pointers_pos, pointer, name):
+    if pointer not in pointers_pos:
+        pointers_pos[pointer] = {}
+    if name in pointers_pos[pointer]:
+        return pointers_pos[pointer][name]
     with open(f"pplang/pointers/{pointer}", 'r') as file:
         for line in file:
             # Remove any leading/trailing whitespace characters
@@ -87,13 +86,13 @@ def get_pointer_pos(pointer, name):
                     value = match.group(2).strip()
 
                     if value == name:
-                        pointers[pointer][name] = index
+                        pointers_pos[pointer][name] = index
                         return index
     return None
 
 def process_object(schema, obj):
     logging.debug(f"Processing object with schema: {schema} and object: {obj}")
-
+    self_pointers_pos = {}
     if isinstance(schema, list):
         compiled_result = []
         for item in obj:
@@ -102,9 +101,9 @@ def process_object(schema, obj):
             for key, value in schema[0].items():
                 if value in item:
                     if idx == 0:
-                        pointers_pos[key] = {}
+                        self_pointers_pos[key] = {}
                     item_value = item[value]
-                    key_pointer_index = get_pointer_pos(key, item_value)
+                    key_pointer_index = get_pointer_pos(self_pointers_pos, key, item_value,)
                     compiled_item[idx] = key_pointer_index
                     idx += 1
             compiled_result.append(compiled_item)
@@ -114,11 +113,9 @@ def process_object(schema, obj):
 def compile(pointer, obj):
     start_time = time.time()  # Start time
 
-    pointers_pos[pointer] = {}
-
     # Get the pointer names
     schema_pointers_names = get_pointer_names(pointer)
-    shema_pointer_pos = get_pointer_pos("=", pointer)
+    shema_pointer_pos = get_pointer_pos({}, "=", pointer)
 
     # The schema is expected at position 0
     raw_schema = schema_pointers_names[0]
