@@ -357,8 +357,8 @@ def uncompile(compiled_str):
                 decoded_data += "],["
             x_object = 0
             current_operation = "{"
-        elif char == '@' and not is_escaped:
-            current_operation = "@"
+        # elif char == '@' and not is_escaped:
+        #     current_operation = "@"
         else:
             is_escaped = False
             pos = int(unicode_to_index.get(char, -1))
