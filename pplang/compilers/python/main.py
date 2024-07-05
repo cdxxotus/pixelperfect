@@ -297,7 +297,7 @@ def uncompile(compiled_str):
     uncompilation=make_new_uncompilation(start_at_pos,start_at_char, compiled_str)
 
     for passe in uncompilation():
-        passe.log()
+        passe.verbose()
 
     ## 1) get first char: shadow_to_light_str[0]
     ## 2) make_new_uncompile(0, char, shadow_to_light_str) here

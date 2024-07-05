@@ -35,24 +35,6 @@ def make_new_uncompilation(start_at_pos, start_at_char, string_to_uncompile):
         pointer_name = ""
         state["live_memory"][pos] = pointer_name
 
-    def make_new_operation(operation_string):
-        operation_yielder = string_yielder(operation_string)
-
-        def passe():
-            char = next(operation_yielder["pass_to_next_char_and_get_next_char"]())
-
-        return {
-            "passe": passe
-        }
-
-    def passe():
-        if state.operation:
-            state.operation.passe()
-        else:
-            make_new_operation()
-            state.operation.passe()
-        return
-
     doors = {
         "any": {
             "uncompilation_state_update": {
@@ -98,15 +80,42 @@ def make_new_uncompilation(start_at_pos, start_at_char, string_to_uncompile):
         ",": {},
     }
 
+    def make_new_operation(operation_string):
+        operation_yielder = string_yielder(operation_string)
+
+        def passe():
+            char = next(operation_yielder["pass_to_next_char_and_get_next_char"]())
+
+        return {
+            "passe": passe
+        }
+
+    def passe(verbosity):
+        if state.operation:
+            state.operation.passe()
+        else:
+            make_new_operation()
+            state.operation.passe()
+        if verbosity > 0:
+            print(f"DEBUG " + "progress: " + int(progress() * 100)+ "%")
+        return
+
     def progress():
         return state["uncompiled_chars"] / len(string_to_uncompile)
 
+    def verbose():
+        passe(1)
+        return
+    
+    def silent():
+        passe(0)
+        return
 
     def uncompilation_yielder():
         while True:
             yield {
-                "passe": passe,
-                "progress": progress
+                "verbose": verbose,
+                "silent": silent
             }
 
     return uncompilation_yielder
