@@ -238,7 +238,8 @@ function processObject(schema, obj) {
     const compiledItem = new Array(Object.keys(schema).length).fill(null)
     let idx = 0
     for (const [key, value] of Object.entries(schema)) {
-      if (value in obj || value[0] === "+") {
+      let forcer_lentree = value === "@"
+      if (forcer_lentree || value in obj || value[0] === "+") {
         if (idx === 0) {
           selfPointersPos[key] = {}
         }
@@ -348,6 +349,7 @@ function compile(pointer, obj) {
   const schemaPointerPos = getPointerPos({}, "=", pointer)
   const rawSchema = schemaPointersNames[0] || ""
   const schema = parseSchema(rawSchema)
+  // console.log({ schema:JSON.stringify(schema) })
 
   logging.debug(`schema:${JSON.stringify(schema)}`)
   logging.debug(`obj:${JSON.stringify(obj)}`)
@@ -395,7 +397,10 @@ function compile(pointer, obj) {
 function uncompile(compiledStr) {
   const startTime = performance.now()
 
-  const shadowToLightStr = compiledStr.replace(/¦¦/g, " ")
+  const shadowToLightStr = compiledStr.replaceAll({
+    "¦¦": " ",
+  })
+
   const charGen = nextChar(shadowToLightStr)
 
   let decodedData = ""
@@ -412,14 +417,14 @@ function uncompile(compiledStr) {
 
   for (const char of charGen) {
     characters += char
-    // console.log({
-    //   currentOperation,
-    //   xObject,
-    //   inNestedBuild,
-    //   decodedData,
-    //   schema,
-    //   characters,
-    // })
+    console.log({
+      currentOperation,
+      // // xObject,
+      // // inNestedBuild,
+      // decodedData,
+      // schema,
+      // characters,
+    })
     decodingUpTo += char
     if (char === "\\" && !isEscaped) {
       isEscaped = true
@@ -484,7 +489,7 @@ function uncompile(compiledStr) {
         const rawSchema = getPointerNames(schemaName)[0]
         const unknownSchema = parseSchema(rawSchema)
         parentSchema = schema
-        if (typeof unknownSchema === "object") {
+        if (!Array.isArray(unknownSchema)) {
           schema = [unknownSchema]
         } else {
           schema = unknownSchema
@@ -513,6 +518,12 @@ function uncompile(compiledStr) {
         currentOperation = "{"
       } else if (currentOperation === "{") {
         const key = Object.keys(schema[0])[xObject]
+        // console.log({
+        //   key,
+        //   schema: schema[0],
+        //   keys: Object.keys(schema[0]),
+        //   xObject,
+        // })
         if (char === "-") {
           decodedData += `"${schema[0][key]}":null`
         } else if (char === "*") {
@@ -532,6 +543,8 @@ function uncompile(compiledStr) {
   }
 
   decodedData = decodedData
+
+  console.log({ decodedData })
 
   let compiledResults = decodedData
 
