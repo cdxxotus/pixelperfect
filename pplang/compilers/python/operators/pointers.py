@@ -129,7 +129,7 @@ def get_pointers(*args, **kwargs):
     return pointers["get_pointers"](*args, **kwargs)
 
 def get_pointer_from_pointers(*args, **kwargs):
-    return pointers["get_pointer_from_pointers"](*args, **kwargs)$
+    return pointers["get_pointer_from_pointers"](*args, **kwargs)
 
 # Example usage
 # ------------------------------------------------------------------
