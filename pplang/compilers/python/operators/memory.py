@@ -95,7 +95,7 @@ def make():
     app_id=_create_app_memory_space(None)
     temp_memory_space_id=_create_temp_memory_space(None)
 
-    memory = make_for_admins("^")
+    memory = make_for_admins(context["^"])
     session_memory = make_for_admins()
 
     return {
