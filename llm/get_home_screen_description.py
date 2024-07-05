@@ -16,7 +16,7 @@ def get_home_screen_description():
         prompt = "As EleutherAI, I want your today's OS home screen to be:"
         generated_text = generator(prompt, do_sample=True, min_length=10, max_length=100)[0]['generated_text']
 
-        return object_to_pplang.compile("string", generated_text)
+        return generated_text
 
     except Exception as e:
         logging.error("Error processing request: %s", e)

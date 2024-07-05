@@ -85,7 +85,7 @@ def parse_schema(schema):
     logging.debug(f"parsechemabefore:{schema}")
     formatted_string = schema.replace("{", '{"').replace("}", '"}').replace(":", '": "').replace(",", '", "')
     logging.debug(f"formatted_string:{formatted_string}")
-    if formatted_string[0] == "[" or formatted_string[0]== "{":
+    if formatted_string[0] == "[" or formatted_string[0] == "{":
         try:
             return json.loads(formatted_string)
         except json.JSONDecodeError as e:
@@ -119,37 +119,38 @@ def get_pointer_pos(pointers_pos, pointer, name):
     return None
 
 def translate_with_priority(big_string, translations):
+    # Split the big_string by any whitespace while preserving the whitespace
+    words = re.split(r'(\s+)', big_string)
+    
+    # Debug print to show the split words
+    logging.debug(f"Split words: {words}")
+    
     # Sort dictionary keys by length in descending order
     sorted_keys = sorted(translations.keys(), key=len, reverse=True)
-    logging.debug(f"Sorted translation keys: {sorted_keys}")
 
-    i = 0
-    max_key_length = len(sorted_keys[0]) if sorted_keys else 0
-    while i < len(big_string):
+    # Create a list to store the translated words
+    encoded = ""
+
+    # Iterate over each word in the split string
+    for word in words:
         matched = False
-        # Start with the maximum length of the keys and decrease to 2
-        for length in range(max_key_length, 1, -1):
-            if i + length > len(big_string):
-                continue
-            for key in sorted_keys:
-                if len(key) == length and big_string[i:i+len(key)] == key:
-                    logging.debug(f"Translating: {big_string[i:i+len(key)]} -> {translations[key]}")
-                    yield translations[key]
-                    i += len(key)
-                    matched = True
-                    break
-            if matched:
+        # Try to match and replace using the sorted keys
+        for key in sorted_keys:
+            if word == key:
+                logging.debug(f"Translating: {word} -> {translations[key]}")
+                encoded+=f"{(translations[key].strip())}¡"
+                matched = True
                 break
         if not matched:
-            # If no match, yield the current character and move to the next
-            logging.debug(f"No match found for: {big_string[i]}")
-            yield big_string[i]
-            i += 1
+            encoded+=f"{(word.strip())}¡"
+    
+    return encoded
+
 
 def process_object(schema, obj):
     self_pointers_pos = {}
 
-    logging.debug(f"process_object:schema,obj::{schema.__class__}:{obj}") 
+    logging.debug(f"process_object:schema,obj::{schema.__class__}:{obj}")
     if isinstance(schema, list):
         compiled_result = []
         for item in obj:
@@ -192,7 +193,8 @@ def process_object(schema, obj):
         return compiled_item
     elif schema == "@":
         dictionary, dictionary_pixels = get_dictionary(schema)
-        translated = ''.join(translate_with_priority(obj.replace(" ", "​"), dictionary))# Ensure generator is fully consumed
+        # shadowspaces=obj.replace(" ", "​")
+        translated = ''.join(translate_with_priority(obj, dictionary))  # Ensure generator is fully consumed
         return translated
 
 def get_reverse_dictionary(dictionary):
@@ -203,39 +205,41 @@ def get_reverse_dictionary(dictionary):
     else:
         raise ValueError("Input is not a dictionary")
 
+def reverse_translate_with_priority(encoded_string, translations):
+    # Create a reverse dictionary for translations
+    reverse_translations = {v: k for k, v in translations.items()}
+
+    # Split the encoded_string by the custom delimiter
+    words = encoded_string.split('*%*')
+
+    # Sort reverse dictionary keys by length in descending order
+    sorted_keys = sorted(reverse_translations.keys(), key=len, reverse=True)
+
+    # Create a list to store the decoded words
+    decoded_words = []
+
+    # Iterate over each word in the split string
+    for word in words:
+        matched = False
+        # Try to match and replace using the sorted reverse keys
+        for key in sorted_keys:
+            if word == key:
+                logging.debug(f"Reverse Translating: {word} -> {reverse_translations[key]}")
+                decoded_words.append(reverse_translations[key])
+                matched = True
+                break
+        if not matched:
+            # If no match, keep the original word
+            decoded_words.append(word)
+
+    # Join the decoded words back into a single string with spaces
+    decoded_string = ' '.join(decoded_words)
+    return decoded_string
+
 def reverse_compiled_string(compiled_string, pointer):
     dictionary, dictionary_pixels = get_dictionary(pointer)
-    reverse_dictionary = get_reverse_dictionary(dictionary)
-    sorted_keys = sorted(reverse_dictionary.keys(), key=len, reverse=True)
     
-    decoded = ""
-    char_gen = next_char(compiled_string)
-
-    # Process the first character explicitly
-    try:
-        first_char = next(char_gen)
-        logging.debug(f"Processing first character: {first_char} (Unicode: {ord(first_char)})")
-        if first_char in reverse_dictionary:
-            logging.debug(f"char: {first_char} -- decoded: {reverse_dictionary[first_char]}")
-            decoded += reverse_dictionary[first_char]
-        else:
-            decoded += first_char
-    except StopIteration:
-        # Handle the case where the generator is empty
-        logging.debug("Compiled string is empty.")
-        return decoded
-
-    # Process remaining characters
-    for char in char_gen:
-        logging.debug(f"Processing character: {char} (Unicode: {ord(char)})")
-        if char in reverse_dictionary:
-            logging.debug(f"char: {char} -- decoded: {reverse_dictionary[char]}")
-            decoded += reverse_dictionary[char]
-        else:
-            decoded += char
-    
-    logging.debug(f"decoded: {decoded}")
-    return decoded
+    return reverse_translate_with_priority(compiled_string,dictionary)
 
 def next_char(compiled_str):
     for char in compiled_str:
@@ -294,7 +298,7 @@ def uncompile(compiled_str):
     x_object = 0
     decoding_up_to = ""
     in_nested_build = False
-    decodeding_up_to=""
+    decodeding_up_to = ""
 
     for char in char_gen:
         # print(f"decoded_data:{decoded_data}")
@@ -320,7 +324,7 @@ def uncompile(compiled_str):
                     decoded_data += f"\"{pointer_name}\":\""
                 else:
                     decoded_data += f"\"{schema[0][key]}\":\""
-            current_operation = "("
+                current_operation = "("
         elif char == ")" and not is_escaped:
             if in_nested_build:
                 schema = parent_schema
@@ -398,7 +402,7 @@ def uncompile(compiled_str):
             elif current_operation == "@":
                 substring = jump_to_next_schema(char_gen)
                 with_spaces = (char + substring).replace("​", "_")
-                translation = ''.join(reverse_compiled_string(char + substring.replace("​", " "), "@"))
+                translation = ''.join(reverse_compiled_string(char + substring.replace("¡", " "), "@"))
                 decoded_data += translation
 
     decoded_data = ''.join(decoded_data)
@@ -438,6 +442,7 @@ def replace_at_index(s, index, replacement):
         raise IndexError("Index out of range")
     # Create a new string with the replacement
     return s[:index] + replacement + s[index+1:]
+
 
 # Example usage
 pointer = 'ui_color_palette_schema'
@@ -495,14 +500,14 @@ print("Compiled String Data:")
 print(compiled_string)
 print("Original String Data:", data_string)
 
-uncompiled_string_data, uncompile_string_time = uncompile(compiled_string)
+uncompiled_string, uncompile_string_time = uncompile(compiled_string)
 print("Uncompiled String Data:")
-print(uncompiled_string_data)
+print(uncompiled_string)
 
 # Calculate compression rates
 compression_rate_data = calculate_compression_rate(str(uncompiled_data), compiled_data)
 compression_rate_colorpaletresponse = calculate_compression_rate(str(uncompiled_colorpaletresponse_data), compiled_colorpaletresponse_data)
-compression_rate_string = calculate_compression_rate(uncompiled_string_data, compiled_string)
+compression_rate_string = calculate_compression_rate(str(uncompiled_string), compiled_string)
 
 print(f"Compression Rate (data): {compression_rate_data:.2f}%")
 print(f"Compression Rate (color_palet_response): {compression_rate_colorpaletresponse:.2f}%")
