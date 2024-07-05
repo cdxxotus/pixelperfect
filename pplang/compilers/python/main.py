@@ -2,6 +2,7 @@ import logging
 import json
 import re
 import time
+from compilers.python.logical_doors import make_new_uncompilation
 
 # Configure logging
 logging.basicConfig(level=logging.CRITICAL, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -186,8 +187,8 @@ def process_object(schema, obj):
                 elif key[0] == "+":
                     compiled_item[idx] = f"({item_value})"
                 elif key[0]=="@":
-                    light_to_shadow=item_value.replace(" ", "¦¦")
-                    compiled_item[idx] = f"({light_to_shadow})"
+                    # light_to_shadow=item_value.replace(" ", "¦¦")
+                    compiled_item[idx] = f"({item_value})"
                 else:
                     key_pointer_index = get_pointer_pos(self_pointers_pos, key, item_value)
                     compiled_item[idx] = key_pointer_index
@@ -291,13 +292,19 @@ def compile(pointer, obj):
 def uncompile(compiled_str):
     start_time = time.time()
 
+    start_at_pos=0
+    start_at_char = compiled_str[0]
+    uncompilation=make_new_uncompilation(start_at_pos,start_at_char, compiled_str)
+
+    for passe in uncompilation():
+        passe.log()
+
     ## 1) get first char: shadow_to_light_str[0]
     ## 2) make_new_uncompile(0, char, shadow_to_light_str) here
     ## 3) for pass in new_compilation.pass():
         ## 4) watch
 
 
-    shadow_to_light_str=compiled_str.replace("¦¦", " ")
     char_gen = next_char(shadow_to_light_str)
     decoded_data = ""
     is_escaped = False
