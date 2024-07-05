@@ -17,7 +17,7 @@ doors = {
     """}""": {},
     """[""": {
         "uncompilation_state_update": {
-            "schema_array_idx": 0,
+            "schema_tupple_idx": 0,
         }
     },
     """]""": {},
