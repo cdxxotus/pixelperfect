@@ -5,7 +5,7 @@ def make(session_state):
     spells_registry = {}
     magic_context = {}
     handshakes_pending = {}
-    hands_in_hands={}
+    # hands_in_hands={}
 
     def register_spell(name, func):
         spells_registry[name] = func
@@ -45,19 +45,22 @@ def make(session_state):
                             magic_context[magic_context_number]**=behavior_args[1]
                     if behavior=="handshake_required":
                         handshakes_pending.set(behavior_args[2], behavior_args[1])
-                        if kwargs["handshake_secret"] in hands_in_hands.keys():
+                        handshake_secret_dict={} if not kwargs["handshake_secret"] else kwargs["handshake_secret"]
+                        if handshake_secret_dict.get(behavior_args[2]) in behavior_args[1].keys():
                             pass
                         else:
                             None
                     if behavior=="shake_hand":
-                        hand_in_hand={"shaker":{
-                            "args": behavior_args
-                        }, "handler": None}
+                        # hand_in_hand={"shaker":{
+                        #     "args": behavior_args
+                        # }, "handler": None}
                         if handshakes_pending[behavior_args[0]]:
                             if handshakes_pending[behavior_args[0]][behavior_args[1]]:
-                                kwargs["handshake_secret"]=handshakes_pending[behavior_args[0]][behavior_args[1]]
-                                hand_in_hand["shaker"]["verified_handshake_value"]=handshakes_pending[behavior_args[0]][behavior_args[1]]
-                                hands_in_hands[handshakes_pending[behavior_args[0]][behavior_args[1]]] = hand_in_hand
+                                handshakd_secret_dict={} if not kwargs["handshake_secret"] else kwargs["handshake_secret"]
+                                handshakd_secret_dict.set(behavior_args[0], handshakes_pending[behavior_args[0]][behavior_args[1]])
+                                # hand_in_hand["shaker"]["verified_handshake_value"]=handshakes_pending[behavior_args[0]][behavior_args[1]]
+                                # hands_in_hands[handshakes_pending[behavior_args[0]][behavior_args[1]]] = hand_in_hand
+                                kwargs["handshake_secret"] = handshakd_secret_dict
                     if behavior == "log":
                         pass
                     elif behavior == "modify_args":
