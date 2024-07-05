@@ -1,22 +1,15 @@
 import uuid
+from compilers.python.operators.magic import magic_wand
 
-def make(session_state, magic_number=666):
+def make(session_state):
     # Internal state
     pointers_map = None
     pointers = {}
     temp_memory_spaces = {}
     shared_memory_space = _create_temp_memory_space()
-    magic = 42
 
-    if magic_number:
-        magic = magic_number
-    if session_state["magic"]:
-        magic = session_state["magic"]
-
+    @magic_wand(None, "reserved", ["get_pointer_from_pointers"])
     def _create_temp_memory_space():
-        if magic != 420:
-            return
-        
         # Create a unique identifier for the temporary memory space
         unique_id = str(uuid.uuid4())
         # Initialize the memory space, e.g., as a dictionary
