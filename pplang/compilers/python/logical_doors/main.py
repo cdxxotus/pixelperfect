@@ -1,4 +1,9 @@
 doors = {
+    """any""": {
+        "uncompilation_state_update": {
+            "is_escaped": False,
+        }
+    },
     """pointer_pos""": {
         "uncompilation_state_update": {
             "is_escaped": False,
