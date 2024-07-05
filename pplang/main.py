@@ -2,8 +2,12 @@ import compilers
 import hard
 import pointers
 import states
-from compilers.python.operators.logger import logger
+from compilers.python.spells import expecto_patronum
+from compilers.python.operators.magic import magic_wand
+from compilers.python.operators import logger
 
+@magic_wand(None, "learn_spell", ["expecto_patronum",expecto_patronum])
+@magic_wand(None, "expecto_patronum")
 def main():
     # Example usage of logger
     logger.info("Starting pplang application...")
