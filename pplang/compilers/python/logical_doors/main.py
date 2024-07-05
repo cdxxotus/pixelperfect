@@ -4,6 +4,28 @@ def make_new_uncompilation():
         "uncompiled_string": "",
         "live_memory": {}
     }
+
+    def string_yielder(string_to_yield):
+        current_char=None
+        def pass_to_next_char_and_get_next_char():
+            current_char = current_char
+            for char in string_to_yield:
+                current_char=char
+                yield char
+
+        def jump_to_next_logical_door_and_get_substring():
+            substring = current_char
+            for char in pass_to_next_char_and_get_next_char:
+                current_char=char
+                # if char == "$": # beware of escaped $
+                #     return substring
+                # substring += char
+            # return substring
+    
+        return {
+            pass_to_next_char_and_get_next_char,
+            jump_to_next_logical_door_and_get_substring
+        }
     
     def get_pointer_name_at_pos(pos):
         # trytogetit from memory
@@ -11,13 +33,18 @@ def make_new_uncompilation():
         pointer_name=""
         state["live_memory"][pos]=pointer_name
 
-    def make_new_operation():
+    def make_new_operation(operation_string):
+        operation_yielder = string_yielder(operation_string)
+
+        def passe():
+            char=operation_yielder.pass_to_next_char_and_get_next_char()
+
         return {
-            
+            passe
+
         }
     
-    return {
-        "doors": {
+    doors = {
             """any""": {
                 "uncompilation_state_update": {
                     "is_escaped": False,
