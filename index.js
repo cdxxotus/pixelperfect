@@ -132,7 +132,9 @@ app.whenReady().then(() => {
       REGION_SIZE
     )
 
-    return regionCanvas.toDataURL("image/png").split(",")[1]
+    const base64Data = regionCanvas.toDataURL("image/png").split(",")[1]
+    console.log("Captured region base64:", base64Data)
+    return base64Data
   }
 
   // Event listeners for mouse movement
@@ -167,12 +169,29 @@ function getRandomColor() {
   return `rgb(${r}, ${g}, ${b})`
 }
 
+async function getInventedTextFromImage() {
+  const image = captureRegionAroundCursor(robot.getMousePos())
+  try {
+    const response = await axios.post(
+      "http://localhost:5000/get_invented_text_from_image",
+      {
+        image_data: image,
+      }
+    )
+    console.log("Invented text response:", response.data)
+    return response.data
+  } catch (error) {
+    console.error("Error getting invented text from image:", error)
+  }
+}
+
 async function getHomeScreenDescription() {
   try {
     const response = await axios.post(
       "http://localhost:5000/get_home_screen_description"
     )
-    return response.data
+    console.log("Home screen description response:", response.data)
+    return response.data.os_home_screen_description
   } catch (error) {
     console.error("Error getting home screen description:", error)
   }
@@ -186,6 +205,7 @@ async function getColorPalet(osDescription) {
         text: osDescription,
       }
     )
+    console.log("Color palette response:", response.data)
     return response.data
   } catch (error) {
     console.error("Error getting color palette:", error)
@@ -193,10 +213,12 @@ async function getColorPalet(osDescription) {
 }
 
 const init = async () => {
-  const osHomeScreeDescription = await getHomeScreenDescription()
-  if (osHomeScreeDescription) {
-    const colorPalette = await getColorPalet(osHomeScreeDescription)
+  const osHomeScreenDescription = await getHomeScreenDescription()
+  if (osHomeScreenDescription) {
+    const colorPalette = await getColorPalet(osHomeScreenDescription)
     console.log("Final color palette:", colorPalette)
+    const inv = await getInventedTextFromImage()
+    console.log("Invented text:", inv)
   }
 }
 
