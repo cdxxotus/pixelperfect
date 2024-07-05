@@ -7,7 +7,10 @@ def make(session_state):
     temp_memory_spaces = {}
     shared_memory_space = _create_temp_memory_space()
 
-    def _create_temp_memory_space():
+    def _create_temp_memory_space(magic_key):
+        if magic_key != 420:
+            return
+        
         # Create a unique identifier for the temporary memory space
         unique_id = str(uuid.uuid4())
         # Initialize the memory space, e.g., as a dictionary
@@ -82,7 +85,7 @@ def make(session_state):
         if len(pointers_name) > 0:
             if pos > -1 or len(value) > 0:
                 pointers = get_pointers(pointers_name)
-                tmp_memory_space_id = _create_temp_memory_space()
+                tmp_memory_space_id = _create_temp_memory_space(420)
                 _get_temp_memory_space(tmp_memory_space_id)["pointers"] = pointers
                 if pos > -1:
                     return _get_pointer_value_at_pos(pos, tmp_memory_space_id)
