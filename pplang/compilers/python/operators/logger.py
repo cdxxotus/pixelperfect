@@ -1,4 +1,9 @@
 def make(session_state):
+    def _stdout(message, verbosity=None):
+        if verbosity is None:
+            verbosity = session_state["stdout_verbosity_name"]
+        print(f"{verbosity} {''.join(message)}")
+        
     def debug(message):
         if session_state["verbosity"] < 0 or session_state["is_verbose"]:
             _stdout(message, "DEBUG")
@@ -40,11 +45,6 @@ def make(session_state):
     def developers(message):
         if session_state["is_dev_mode"]:
             _stdout(message, "@DEV")
-
-    def _stdout(message, verbosity=None):
-        if verbosity is None:
-            verbosity = session_state["stdout_verbosity_name"]
-        print(f"{verbosity} {''.join(message)}")
 
     # Return a dictionary of functions
     return {
