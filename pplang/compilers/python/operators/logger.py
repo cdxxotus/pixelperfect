@@ -62,7 +62,7 @@ session_state = {
 logger = Logger(session_state)
 
 # Example developer message at instantiation
-logger.developers("Thank you for being here, I hope you appreciate this message created just for you.")
+logger.developers("thank you for being here, i hope you appreciate this message created just for you")
 
 # Example usage
 # ----------------------------------------------------------------
