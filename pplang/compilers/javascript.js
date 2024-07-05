@@ -596,122 +596,149 @@ function replaceAtIndex(s, index, replacement) {
   return s.slice(0, index) + replacement + s.slice(index + 1)
 }
 
+function extractPixelsFromFalskResponse(response) {
+  // Regular expression to capture the two groups
+  const regex = /^(.*)+[^,](\((.*)\))$/
+
+  // Use the regex to extract the two parts
+  const matches = response.match(regex)
+
+  if (matches) {
+    let part1 = matches[1] // Group 1
+    const part2 = matches[2] // Group 2
+
+    // Remove leading "('" and trailing "')"
+    // part1 = part1.slice(2, part1.length).slice(0, -1)
+
+    console.log("Part 1:", part1)
+    console.log("Part 2:", part2)
+  } else {
+    console.log("No match found.")
+  }
+}
+
 // Example usage
-const pointer = "ui_color_palette_schema"
-const data = [
-  { color: "Beige", type: "Secondary color", score: 0.9999566078186035 },
-  {
-    color: "Cyan",
-    type: "Notification highlight color",
-    score: 0.9999328851699829,
-  },
-  { color: "Pink", type: "Accent color", score: 0.9999185800552368 },
-  { color: "AliceBlue", type: "Text color", score: 0.999894380569458 },
-  { color: "WhiteSmoke", type: "Border color", score: 0.9998866319656372 },
-  { color: "Purple", type: "Highlight color", score: 0.9998842477798462 },
-  { color: "Azure", type: "Main color", score: 0.9998782873153687 },
-  { color: "AntiqueWhite", type: "Alert color", score: 0.9998581409454346 },
-  {
-    color: "DarkGray",
-    type: "Subtle background color",
-    score: 0.9996941089630127,
-  },
-]
+// const pointer = "ui_color_palette_schema"
+// const data = [
+//   { color: "Beige", type: "Secondary color", score: 0.9999566078186035 },
+//   {
+//     color: "Cyan",
+//     type: "Notification highlight color",
+//     score: 0.9999328851699829,
+//   },
+//   { color: "Pink", type: "Accent color", score: 0.9999185800552368 },
+//   { color: "AliceBlue", type: "Text color", score: 0.999894380569458 },
+//   { color: "WhiteSmoke", type: "Border color", score: 0.9998866319656372 },
+//   { color: "Purple", type: "Highlight color", score: 0.9998842477798462 },
+//   { color: "Azure", type: "Main color", score: 0.9998782873153687 },
+//   { color: "AntiqueWhite", type: "Alert color", score: 0.9998581409454346 },
+//   {
+//     color: "DarkGray",
+//     type: "Subtle background color",
+//     score: 0.9996941089630127,
+//   },
+// ]
 
-const dataColorPaletResponse = {
-  color_palet: `$\\$[¾,${'"'}|ʹ,&|ャ,%|-,#|-,\\(|両,\\$|~,!|-,\\)|-,']`,
-  inference_time: 2.1053810119628906,
+// const dataColorPaletResponse = {
+//   color_palet: `$\\$[¾,${'"'}|ʹ,&|ャ,%|-,#|-,\\(|両,\\$|~,!|-,\\)|-,']`,
+//   inference_time: 2.1053810119628906,
+// }
+
+// const dataOsDescription = {
+//   os_home_screen_description: "qsdfqsdf qs qsdf qsdf qsdf qsd qq qsf",
+//   inference_time: 1.343,
+// }
+
+// const dataString = `
+// Vous pouvez partager un article en cliquant sur les icônes de partage en haut à droite de celui-ci.
+// La reproduction totale ou partielle d’un article, sans l’autorisation écrite et préalable du Monde, est strictement interdite.
+// Pour plus d’informations, consultez nos conditions générales de vente.
+// Pour toute demande d’autorisation, contactez syndication@lemonde.fr.
+// En tant qu’abonné, vous pouvez offrir jusqu’à cinq articles par mois à l’un de vos proches grâce à la fonctionnalité « Offrir un article ».
+
+// https://www.lemonde.fr/politique/live/2024/07/04/en-direct-legislatives-2024-plus-de-3-1-millions-de-procurations-sur-l-ensemble-des-scrutins_6245747_823448.html
+
+// Le préfet de police de Paris, Laurent Nuñez, va interdire une manifestation du collectif Action antifasciste Paris-Banlieue prévue dimanche devant l’Assemblée nationale à la clôture du second tour des législatives, a rapporté jeudi soir à l’Agence France-Presse une source policière.
+
+// Ce collectif a appelé dans un post sur X à un rassemblement « dimanche à 20 h devant l’Assemblée nationale quelle que soit l’issue » du scrutin. « Aujourd’hui plus que jamais, faisons bloc par tous les moyens contre l’extrême droite et ses alliés », a-t-il fait valoir. Sur les réseaux sociaux, le collectif a lancé un appel à « converger vers l’Assemblée nationale ».
+
+// Le ministre de l’intérieur, Gérald Darmanin, a annoncé jeudi que « 30 000 policiers et gendarmes, dont 5 000 à Paris et sa banlieue » seraient mobilisés dimanche soir pour le second tour du scrutin législatif anticipé. Les services de renseignement considèrent, selon une source policière, qu’il existe « de réels risques de troubles à l’ordre public après le second tour avec à la fois des rassemblements qui pourraient donner lieu à des incidents mais aussi des risques d’affrontements entre des groupes antagonistes ».
+// `
+
+// const [compiledData, compileTime] = compile(pointer, data)
+// console.log("Compiled Data:")
+// console.log(compiledData)
+
+// const [uncompiledData, uncompileTime] = uncompile(compiledData)
+// console.log("Uncompiled Data:")
+// console.log(uncompiledData)
+
+// const [compiledColorPaletResponseData, __] = compile(
+//   "ui_color_palette_response",
+//   dataColorPaletResponse
+// )
+// console.log("Compiled ColorPaletResponse Data:")
+// console.log(compiledColorPaletResponseData)
+
+// const [uncompiledColorPaletResponseData, _] = uncompile(
+//   compiledColorPaletResponseData
+// )
+// console.log("Uncompiled ColorPaletResponse Data:")
+// console.log(uncompiledColorPaletResponseData)
+
+// const [compiledDataOs, compileTimeOs] = compile(
+//   "os_home_screen_description_response",
+//   dataOsDescription
+// )
+// console.log("Compiled Data_os:")
+// console.log(compiledDataOs)
+
+// const [uncompiledDataOs, uncompileTimeOs] = uncompile(compiledDataOs)
+// console.log("Uncompiled Data_os:")
+// console.log(uncompiledDataOs)
+
+// const [compiledString, compileStringTime] = compile("string", dataString)
+// console.log("Compiled String Data:")
+// console.log(compiledString)
+// console.log("Original String Data:", dataString)
+
+// const [uncompiledString, uncompileStringTime] = uncompile(compiledString)
+// console.log("Uncompiled String Data:")
+// console.log(uncompiledString)
+
+// // Calculate compression rates
+// const compressionRateData = calculateCompressionRate(
+//   JSON.stringify(uncompiledData),
+//   compiledData
+// )
+// const compressionRateColorPaletResponse = calculateCompressionRate(
+//   JSON.stringify(uncompiledColorPaletResponseData),
+//   compiledColorPaletResponseData
+// )
+// const compressionRateString = calculateCompressionRate(
+//   JSON.stringify(uncompiledString),
+//   compiledString
+// )
+
+// console.log(`Compression Rate (data): ${compressionRateData.toFixed(2)}%`)
+// console.log(
+//   `Compression Rate (color_palet_response): ${compressionRateColorPaletResponse.toFixed(
+//     2
+//   )}%`
+// )
+// console.log(`Compression Rate (string): ${compressionRateString.toFixed(2)}%`)
+
+// console.log(`Compilation time for data: ${compileTime.toFixed(6)} seconds`)
+// console.log(`Uncompilation time for data: ${uncompileTime.toFixed(6)} seconds`)
+// console.log(
+//   `Compilation time for string: ${compileStringTime.toFixed(6)} seconds`
+// )
+// console.log(
+//   `Uncompilation time for string: ${uncompileStringTime.toFixed(6)} seconds`
+// )
+
+module.exports = {
+  uncompile,
+  compile,
+  extractPixelsFromFalskResponse,
 }
-
-const dataOsDescription = {
-  os_home_screen_description: "qsdfqsdf qs qsdf qsdf qsdf qsd qq qsf",
-  inference_time: 1.343,
-}
-
-const dataString = `
-Vous pouvez partager un article en cliquant sur les icônes de partage en haut à droite de celui-ci.
-La reproduction totale ou partielle d’un article, sans l’autorisation écrite et préalable du Monde, est strictement interdite.
-Pour plus d’informations, consultez nos conditions générales de vente.
-Pour toute demande d’autorisation, contactez syndication@lemonde.fr.
-En tant qu’abonné, vous pouvez offrir jusqu’à cinq articles par mois à l’un de vos proches grâce à la fonctionnalité « Offrir un article ».
-
-https://www.lemonde.fr/politique/live/2024/07/04/en-direct-legislatives-2024-plus-de-3-1-millions-de-procurations-sur-l-ensemble-des-scrutins_6245747_823448.html
-
-Le préfet de police de Paris, Laurent Nuñez, va interdire une manifestation du collectif Action antifasciste Paris-Banlieue prévue dimanche devant l’Assemblée nationale à la clôture du second tour des législatives, a rapporté jeudi soir à l’Agence France-Presse une source policière.
-
-Ce collectif a appelé dans un post sur X à un rassemblement « dimanche à 20 h devant l’Assemblée nationale quelle que soit l’issue » du scrutin. « Aujourd’hui plus que jamais, faisons bloc par tous les moyens contre l’extrême droite et ses alliés », a-t-il fait valoir. Sur les réseaux sociaux, le collectif a lancé un appel à « converger vers l’Assemblée nationale ».
-
-Le ministre de l’intérieur, Gérald Darmanin, a annoncé jeudi que « 30 000 policiers et gendarmes, dont 5 000 à Paris et sa banlieue » seraient mobilisés dimanche soir pour le second tour du scrutin législatif anticipé. Les services de renseignement considèrent, selon une source policière, qu’il existe « de réels risques de troubles à l’ordre public après le second tour avec à la fois des rassemblements qui pourraient donner lieu à des incidents mais aussi des risques d’affrontements entre des groupes antagonistes ».
-`
-
-const [compiledData, compileTime] = compile(pointer, data)
-console.log("Compiled Data:")
-console.log(compiledData)
-
-const [uncompiledData, uncompileTime] = uncompile(compiledData)
-console.log("Uncompiled Data:")
-console.log(uncompiledData)
-
-const [compiledColorPaletResponseData, __] = compile(
-  "ui_color_palette_response",
-  dataColorPaletResponse
-)
-console.log("Compiled ColorPaletResponse Data:")
-console.log(compiledColorPaletResponseData)
-
-const [uncompiledColorPaletResponseData, _] = uncompile(
-  compiledColorPaletResponseData
-)
-console.log("Uncompiled ColorPaletResponse Data:")
-console.log(uncompiledColorPaletResponseData)
-
-const [compiledDataOs, compileTimeOs] = compile(
-  "os_home_screen_description_response",
-  dataOsDescription
-)
-console.log("Compiled Data_os:")
-console.log(compiledDataOs)
-
-const [uncompiledDataOs, uncompileTimeOs] = uncompile(compiledDataOs)
-console.log("Uncompiled Data_os:")
-console.log(uncompiledDataOs)
-
-const [compiledString, compileStringTime] = compile("string", dataString)
-console.log("Compiled String Data:")
-console.log(compiledString)
-console.log("Original String Data:", dataString)
-
-const [uncompiledString, uncompileStringTime] = uncompile(compiledString)
-console.log("Uncompiled String Data:")
-console.log(uncompiledString)
-
-// Calculate compression rates
-const compressionRateData = calculateCompressionRate(
-  JSON.stringify(uncompiledData),
-  compiledData
-)
-const compressionRateColorPaletResponse = calculateCompressionRate(
-  JSON.stringify(uncompiledColorPaletResponseData),
-  compiledColorPaletResponseData
-)
-const compressionRateString = calculateCompressionRate(
-  JSON.stringify(uncompiledString),
-  compiledString
-)
-
-console.log(`Compression Rate (data): ${compressionRateData.toFixed(2)}%`)
-console.log(
-  `Compression Rate (color_palet_response): ${compressionRateColorPaletResponse.toFixed(
-    2
-  )}%`
-)
-console.log(`Compression Rate (string): ${compressionRateString.toFixed(2)}%`)
-
-console.log(`Compilation time for data: ${compileTime.toFixed(6)} seconds`)
-console.log(`Uncompilation time for data: ${uncompileTime.toFixed(6)} seconds`)
-console.log(
-  `Compilation time for string: ${compileStringTime.toFixed(6)} seconds`
-)
-console.log(
-  `Uncompilation time for string: ${uncompileStringTime.toFixed(6)} seconds`
-)

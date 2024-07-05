@@ -3,6 +3,7 @@ const robot = require("robotjs")
 const { createCanvas, Image } = require("canvas")
 const path = require("path")
 const axios = require("axios")
+const javascript = require("./pplang/compilers/javascript.js")
 
 let win
 const NUM_PIXELS_TO_CHANGE = 1000
@@ -60,7 +61,7 @@ app.whenReady().then(() => {
 
     // Generate a random color for this frame
     const color = getRandomColor()
-    console.log("Generated color:", color)
+    // console.log("Generated color:", color)
 
     // If no previous changes, initialize with random starting point
     if (previousChanges.length === 0) {
@@ -107,7 +108,7 @@ app.whenReady().then(() => {
 
     // Stream the updated canvas to the renderer process
     currentBase64Img = canvas.toDataURL("image/png").split(",")[1]
-    console.log("Streaming updated canvas image...")
+    // console.log("Streaming updated canvas image...")
     win.webContents.send("base64-image", currentBase64Img)
   }
 
@@ -142,7 +143,7 @@ app.whenReady().then(() => {
   setInterval(() => {
     const mouse = robot.getMousePos()
     if (mouse.x !== prevMouse.x || mouse.y !== prevMouse.y) {
-      console.log("Mouse moved to:", mouse)
+      // console.log("Mouse moved to:", mouse)
       updateAndStreamCanvas()
       prevMouse = mouse
     }
@@ -169,28 +170,6 @@ function getRandomColor() {
   return `rgb(${r}, ${g}, ${b})`
 }
 
-async function python(script) {
-  // Adjust the path to your Python script
-  const pythonProcess = spawn("python", [
-    path.join(__dirname, "script.py"),
-    "arg1",
-    "arg2",
-  ])
-
-  // Handle output from the Python script
-  pythonProcess.stdout.on("data", (data) => {
-    console.log(`stdout: ${data}`)
-  })
-
-  pythonProcess.stderr.on("data", (data) => {
-    console.error(`stderr: ${data}`)
-  })
-
-  pythonProcess.on("close", (code) => {
-    console.log(`child process exited with code ${code}`)
-  })
-}
-
 async function getInventedTextFromImage() {
   const image = captureRegionAroundCursor(robot.getMousePos())
   try {
@@ -212,8 +191,11 @@ async function getHomeScreenDescription() {
     const response = await axios.post(
       "http://localhost:5000/get_home_screen_description"
     )
-    console.log("Home screen description response:", response.data)
-    return response.data
+    console.log(
+      "Home screen description response:",
+      javascript.extractPixelsFromFalskResponse(response.data)
+    )
+    // return javascript.uncompile(response.data)
   } catch (error) {
     console.error("Error getting home screen description:", error)
   }
