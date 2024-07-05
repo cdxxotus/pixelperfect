@@ -596,27 +596,6 @@ function replaceAtIndex(s, index, replacement) {
   return s.slice(0, index) + replacement + s.slice(index + 1)
 }
 
-function extractPixelsFromFalskResponse(response) {
-  // Regular expression to capture the two groups
-  const regex = /^(.*)+[^,](\((.*)\))$/
-
-  // Use the regex to extract the two parts
-  const matches = response.match(regex)
-
-  if (matches) {
-    let part1 = matches[1] // Group 1
-    const part2 = matches[2] // Group 2
-
-    // Remove leading "('" and trailing "')"
-    // part1 = part1.slice(2, part1.length).slice(0, -1)
-
-    console.log("Part 1:", part1)
-    console.log("Part 2:", part2)
-  } else {
-    console.log("No match found.")
-  }
-}
-
 // Example usage
 // const pointer = "ui_color_palette_schema"
 // const data = [
@@ -740,5 +719,4 @@ function extractPixelsFromFalskResponse(response) {
 module.exports = {
   uncompile,
   compile,
-  extractPixelsFromFalskResponse,
 }

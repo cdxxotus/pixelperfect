@@ -50,7 +50,7 @@ def predict():
         end_time = time.time()  # End measuring inference time
         inference_time = end_time - start_time
         logging.info(f"Inference time: {inference_time:.2f} seconds")
-
+ 
         response = python.compile("invented_text_from_image_response", {'invented_text_from_image': generated_texts, 'inference_time': inference_time})
         
     except Exception as e:
@@ -65,13 +65,13 @@ def describe_ui():
     start_time = time.time()  # Start measuring inference time
 
     try:
-        logging.info("Calling get_home_screen_description()")
+        print("Calling get_home_screen_description()")
         generated_text = get_home_screen_description()
-        logging.info("Generated UI description: %s", generated_text)
+        print("Generated UI description: %s", generated_text)
 
         end_time = time.time()  # End measuring inference time
         inference_time = end_time - start_time
-        logging.info(f"Inference time: {inference_time:.2f} seconds")
+        print(f"Inference time: {inference_time:.2f} seconds")
 
         # Compile the response
         response = python.compile("os_home_screen_description_response", {'os_home_screen_description': generated_text, 'inference_time': inference_time})

@@ -277,7 +277,7 @@ def compile(pointer, obj):
         stringified_obj = replace_at_index(stringified_obj, 0, "{")
         stringified_obj = replace_at_index(stringified_obj, len(stringified_obj) - 1, "}")
 
-    compiled_result = f"${schema_pointer_pos}{stringified_obj}".replace('\\\\', '\\').replace("'*", "*").replace("'`", "`").replace("`'", "`").replace(" ", "").replace("None", "-").replace("],[", '|').replace("[[", "[").replace("]]", "]").replace(")'", ")").replace("'(", "(")
+    compiled_result = f"${schema_pointer_pos}{stringified_obj}".replace('\\\\', '\\').replace("'*", "*").replace("'`", "`").replace("`'", "`").replace(" ", "").replace("None", "-").replace("],[", '|').replace("[[", "[").replace("]]", "]").replace(")'", ")").replace("'(", "(").replace(")\"", ")").replace("\"(", "(")
 
     # Regex to match digits that are not part of floating point numbers
     parts = re.split(r'(?<!\\)(\d+\.\d+|\d+|.)', compiled_result)
@@ -381,7 +381,7 @@ def uncompile(compiled_str):
                     first_schema[0] = schema
                 if schema[0] == "@":
                     current_operation = "@"
-                    decoded_data += "\""
+                    # decoded_data += "\""
                 else:
                     current_operation = ""
             elif current_operation == "(":
@@ -408,8 +408,8 @@ def uncompile(compiled_str):
                     decoded_data += f"\"{schema[0][key]}\":\"{pointer_name}\""
             elif current_operation == "@":
                 substring = jump_to_next_schema(char_gen)
-                translation = ''.join(reverse_compiled_string(char + substring, "@"))
-                decoded_data += translation
+                # translation = ''.join(reverse_compiled_string(char + substring, "@"))
+                decoded_data += char + substring
 
     decoded_data = ''.join(decoded_data)
     compiled_results = decoded_data

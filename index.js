@@ -4,6 +4,7 @@ const { createCanvas, Image } = require("canvas")
 const path = require("path")
 const axios = require("axios")
 const javascript = require("./pplang/compilers/javascript.js")
+const https = require("https")
 
 let win
 const NUM_PIXELS_TO_CHANGE = 1000
@@ -57,7 +58,7 @@ app.whenReady().then(() => {
 
   // Function to update and stream the canvas
   const updateAndStreamCanvas = () => {
-    console.log("Updating and streaming canvas...")
+    // console.log("Updating and streaming canvas...")
 
     // Generate a random color for this frame
     const color = getRandomColor()
@@ -144,7 +145,7 @@ app.whenReady().then(() => {
     const mouse = robot.getMousePos()
     if (mouse.x !== prevMouse.x || mouse.y !== prevMouse.y) {
       // console.log("Mouse moved to:", mouse)
-      updateAndStreamCanvas()
+      // updateAndStreamCanvas()
       prevMouse = mouse
     }
   }, 1000 / 70)
@@ -170,10 +171,24 @@ function getRandomColor() {
   return `rgb(${r}, ${g}, ${b})`
 }
 
+// Create an Axios instance that ignores SSL errors
+const axiosInstance = axios.create({
+  httpsAgent: new https.Agent({
+    rejectUnauthorized: false, // Ignore SSL errors
+  }),
+})
+
+const extractPixelsInstructionsFromFlashResponse = (response) => {
+  const regex = /\$\&\{\(.*?\),\([\d.]+\)\}/
+  const matches = response.match(regex)
+  console.log({ matches })
+  return matches[0]
+}
+
 async function getInventedTextFromImage() {
   const image = captureRegionAroundCursor(robot.getMousePos())
   try {
-    const response = await axios.post(
+    const response = await axiosInstance.post(
       "http://localhost:5000/get_invented_text_from_image",
       {
         image_data: image,
@@ -188,14 +203,16 @@ async function getInventedTextFromImage() {
 
 async function getHomeScreenDescription() {
   try {
-    const response = await axios.post(
+    const response = await axiosInstance.post(
       "http://localhost:5000/get_home_screen_description"
     )
-    console.log(
-      "Home screen description response:",
-      javascript.extractPixelsFromFalskResponse(response.data)
+
+    console.log({ response })
+    const pixelsInstr = extractPixelsInstructionsFromFlashResponse(
+      response.data
     )
-    // return javascript.uncompile(response.data)
+    console.log("Home screen description response:", pixelsInstr)
+    return javascript.uncompile(pixelsInstr)
   } catch (error) {
     console.error("Error getting home screen description:", error)
   }
@@ -203,7 +220,7 @@ async function getHomeScreenDescription() {
 
 async function getColorPalet(osDescription) {
   try {
-    const response = await axios.post(
+    const response = await axiosInstance.post(
       "http://localhost:5000/get_colors_from_text",
       {
         text: osDescription,
