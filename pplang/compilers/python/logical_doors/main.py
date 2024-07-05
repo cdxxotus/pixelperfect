@@ -1,3 +1,6 @@
+
+from compilers.python.operators.logger import logger
+
 def make_new_uncompilation(start_at_pos, start_at_char, string_to_uncompile):
     state = {
         "uncompiled_string": "",
@@ -96,8 +99,7 @@ def make_new_uncompilation(start_at_pos, start_at_char, string_to_uncompile):
         else:
             make_new_operation()
             state.operation.passe()
-        if verbosity < 0:
-            print(f"DEBUG " + "progress: " + int(progress() * 100)+ "%")
+            logger.info("progress: " + int(progress() * 100)+ "%")
         return
 
     def progress():
