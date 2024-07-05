@@ -171,7 +171,7 @@ def process_object(schema, obj):
         compiled_item = [None] * len(schema)
         idx = 0
         for key, value in schema.items():
-            logging.debug(f"key:value:::{key}:{value}")
+            # print(f"key:value:::{key}:{value}")
             if value in obj or value[0] == "+":
                 if idx == 0:
                     self_pointers_pos[key] = {}
@@ -184,6 +184,8 @@ def process_object(schema, obj):
                 if key == "*":
                     compiled_item[idx] = f"*({item_value})"
                 elif key[0] == "+":
+                    compiled_item[idx] = f"({item_value})"
+                elif key[0]=="@":
                     compiled_item[idx] = f"({item_value})"
                 else:
                     key_pointer_index = get_pointer_pos(self_pointers_pos, key, item_value)
@@ -355,6 +357,8 @@ def uncompile(compiled_str):
                 decoded_data += "],["
             x_object = 0
             current_operation = "{"
+        elif char == '@' and not is_escaped:
+            current_operation = "@"
         else:
             is_escaped = False
             pos = int(unicode_to_index.get(char, -1))
@@ -445,75 +449,85 @@ def replace_at_index(s, index, replacement):
 
 
 # Example usage
-# pointer = 'ui_color_palette_schema'
-# data = [
-#     {"color": "Beige", "type": "Secondary color", "score": 0.9999566078186035},
-#     {"color": "Cyan", "type": "Notification highlight color", "score": 0.9999328851699829},
-#     {"color": "Pink", "type": "Accent color", "score": 0.9999185800552368},
-#     {"color": "AliceBlue", "type": "Text color", "score": 0.999894380569458},
-#     {"color": "WhiteSmoke", "type": "Border color", "score": 0.9998866319656372},
-#     {"color": "Purple", "type": "Highlight color", "score": 0.9998842477798462},
-#     {"color": "Azure", "type": "Main color", "score": 0.9998782873153687},
-#     {"color": "AntiqueWhite", "type": "Alert color", "score": 0.9998581409454346},
-#     {"color": "DarkGray", "type": "Subtle background color", "score": 0.9996941089630127}
-# ]
+pointer = 'ui_color_palette_schema'
+data = [
+    {"color": "Beige", "type": "Secondary color", "score": 0.9999566078186035},
+    {"color": "Cyan", "type": "Notification highlight color", "score": 0.9999328851699829},
+    {"color": "Pink", "type": "Accent color", "score": 0.9999185800552368},
+    {"color": "AliceBlue", "type": "Text color", "score": 0.999894380569458},
+    {"color": "WhiteSmoke", "type": "Border color", "score": 0.9998866319656372},
+    {"color": "Purple", "type": "Highlight color", "score": 0.9998842477798462},
+    {"color": "Azure", "type": "Main color", "score": 0.9998782873153687},
+    {"color": "AntiqueWhite", "type": "Alert color", "score": 0.9998581409454346},
+    {"color": "DarkGray", "type": "Subtle background color", "score": 0.9996941089630127}
+]
 
-# data_color_palet_response = {
-#     "color_palet": """$\$[¾,"|ʹ,&|ャ,%|-,#|-,\(|両,\$|~,!|-,\)|-,']""",
-#     "inference_time": 2.1053810119628906,
-# }
+data_color_palet_response = {
+    "color_palet": """$\$[¾,"|ʹ,&|ャ,%|-,#|-,\(|両,\$|~,!|-,\)|-,']""",
+    "inference_time": 2.1053810119628906,
+}
 
-# data_string = """
-# Vous pouvez partager un article en cliquant sur les icônes de partage en haut à droite de celui-ci. 
-# La reproduction totale ou partielle d’un article, sans l’autorisation écrite et préalable du Monde, est strictement interdite. 
-# Pour plus d’informations, consultez nos conditions générales de vente. 
-# Pour toute demande d’autorisation, contactez syndication@lemonde.fr. 
-# En tant qu’abonné, vous pouvez offrir jusqu’à cinq articles par mois à l’un de vos proches grâce à la fonctionnalité « Offrir un article ». 
+data_os_desciripn = {'os_home_screen_description': "qsdfqsdf qs qsdf qsdf qsdf qsd qq qsf", 'inference_time': 1.343}
 
-# https://www.lemonde.fr/politique/live/2024/07/04/en-direct-legislatives-2024-plus-de-3-1-millions-de-procurations-sur-l-ensemble-des-scrutins_6245747_823448.html
+data_string = """
+Vous pouvez partager un article en cliquant sur les icônes de partage en haut à droite de celui-ci. 
+La reproduction totale ou partielle d’un article, sans l’autorisation écrite et préalable du Monde, est strictement interdite. 
+Pour plus d’informations, consultez nos conditions générales de vente. 
+Pour toute demande d’autorisation, contactez syndication@lemonde.fr. 
+En tant qu’abonné, vous pouvez offrir jusqu’à cinq articles par mois à l’un de vos proches grâce à la fonctionnalité « Offrir un article ». 
 
-# Le préfet de police de Paris, Laurent Nuñez, va interdire une manifestation du collectif Action antifasciste Paris-Banlieue prévue dimanche devant l’Assemblée nationale à la clôture du second tour des législatives, a rapporté jeudi soir à l’Agence France-Presse une source policière.
+https://www.lemonde.fr/politique/live/2024/07/04/en-direct-legislatives-2024-plus-de-3-1-millions-de-procurations-sur-l-ensemble-des-scrutins_6245747_823448.html
 
-# Ce collectif a appelé dans un post sur X à un rassemblement « dimanche à 20 h devant l’Assemblée nationale quelle que soit l’issue » du scrutin. « Aujourd’hui plus que jamais, faisons bloc par tous les moyens contre l’extrême droite et ses alliés », a-t-il fait valoir. Sur les réseaux sociaux, le collectif a lancé un appel à « converger vers l’Assemblée nationale ».
+Le préfet de police de Paris, Laurent Nuñez, va interdire une manifestation du collectif Action antifasciste Paris-Banlieue prévue dimanche devant l’Assemblée nationale à la clôture du second tour des législatives, a rapporté jeudi soir à l’Agence France-Presse une source policière.
 
-# Le ministre de l’intérieur, Gérald Darmanin, a annoncé jeudi que « 30 000 policiers et gendarmes, dont 5 000 à Paris et sa banlieue » seraient mobilisés dimanche soir pour le second tour du scrutin législatif anticipé. Les services de renseignement considèrent, selon une source policière, qu’il existe « de réels risques de troubles à l’ordre public après le second tour avec à la fois des rassemblements qui pourraient donner lieu à des incidents mais aussi des risques d’affrontements entre des groupes antagonistes ».
-# """
+Ce collectif a appelé dans un post sur X à un rassemblement « dimanche à 20 h devant l’Assemblée nationale quelle que soit l’issue » du scrutin. « Aujourd’hui plus que jamais, faisons bloc par tous les moyens contre l’extrême droite et ses alliés », a-t-il fait valoir. Sur les réseaux sociaux, le collectif a lancé un appel à « converger vers l’Assemblée nationale ».
 
-# compiled_data, compile_time = compile(pointer, data)
-# print("Compiled Data:")
-# print(compiled_data)
+Le ministre de l’intérieur, Gérald Darmanin, a annoncé jeudi que « 30 000 policiers et gendarmes, dont 5 000 à Paris et sa banlieue » seraient mobilisés dimanche soir pour le second tour du scrutin législatif anticipé. Les services de renseignement considèrent, selon une source policière, qu’il existe « de réels risques de troubles à l’ordre public après le second tour avec à la fois des rassemblements qui pourraient donner lieu à des incidents mais aussi des risques d’affrontements entre des groupes antagonistes ».
+"""
 
-# uncompiled_data, uncompile_time = uncompile(compiled_data)
-# print("Uncompiled Data:")
-# print(uncompiled_data)
+compiled_data, compile_time = compile(pointer, data)
+print("Compiled Data:")
+print(compiled_data)
 
-# compiled_colorpaletresponse_data, _ = compile("ui_color_palette_response", data_color_palet_response)
-# print("Compiled ColorPaletResponse Data:")
-# print(compiled_colorpaletresponse_data)
+uncompiled_data, uncompile_time = uncompile(compiled_data)
+print("Uncompiled Data:")
+print(uncompiled_data)
 
-# uncompiled_colorpaletresponse_data, _ = uncompile(compiled_colorpaletresponse_data)
-# print("Uncompiled ColorPaletResponse Data:")
-# print(uncompiled_colorpaletresponse_data)
+compiled_colorpaletresponse_data, _ = compile("ui_color_palette_response", data_color_palet_response)
+print("Compiled ColorPaletResponse Data:")
+print(compiled_colorpaletresponse_data)
 
-# compiled_string, compile_string_time = compile("string", data_string)
-# print("Compiled String Data:")
-# print(compiled_string)
-# print("Original String Data:", data_string)
+uncompiled_colorpaletresponse_data, _ = uncompile(compiled_colorpaletresponse_data)
+print("Uncompiled ColorPaletResponse Data:")
+print(uncompiled_colorpaletresponse_data)
 
-# uncompiled_string, uncompile_string_time = uncompile(compiled_string)
-# print("Uncompiled String Data:")
-# print(uncompiled_string)
+compiled_data_os, compile_time_os = compile("os_home_screen_description_response", data_os_desciripn)
+print("Compiled Data_os:")
+print(compiled_data_os)
 
-# # Calculate compression rates
-# compression_rate_data = calculate_compression_rate(str(uncompiled_data), compiled_data)
-# compression_rate_colorpaletresponse = calculate_compression_rate(str(uncompiled_colorpaletresponse_data), compiled_colorpaletresponse_data)
-# compression_rate_string = calculate_compression_rate(str(uncompiled_string), compiled_string)
+uncompiled_data_os, uncompile_time_os = uncompile(compiled_data_os)
+print("Uncompiled Data_os:")
+print(uncompiled_data_os)
 
-# print(f"Compression Rate (data): {compression_rate_data:.2f}%")
-# print(f"Compression Rate (color_palet_response): {compression_rate_colorpaletresponse:.2f}%")
-# print(f"Compression Rate (string): {compression_rate_string:.2f}%")
+compiled_string, compile_string_time = compile("string", data_string)
+print("Compiled String Data:")
+print(compiled_string)
+print("Original String Data:", data_string)
 
-# print(f"Compilation time for data: {compile_time:.6f} seconds")
-# print(f"Uncompilation time for data: {uncompile_time:.6f} seconds")
-# print(f"Compilation time for string: {compile_string_time:.6f} seconds")
-# print(f"Uncompilation time for string: {uncompile_string_time:.6f} seconds")
+uncompiled_string, uncompile_string_time = uncompile(compiled_string)
+print("Uncompiled String Data:")
+print(uncompiled_string)
+
+# Calculate compression rates
+compression_rate_data = calculate_compression_rate(str(uncompiled_data), compiled_data)
+compression_rate_colorpaletresponse = calculate_compression_rate(str(uncompiled_colorpaletresponse_data), compiled_colorpaletresponse_data)
+compression_rate_string = calculate_compression_rate(str(uncompiled_string), compiled_string)
+
+print(f"Compression Rate (data): {compression_rate_data:.2f}%")
+print(f"Compression Rate (color_palet_response): {compression_rate_colorpaletresponse:.2f}%")
+print(f"Compression Rate (string): {compression_rate_string:.2f}%")
+
+print(f"Compilation time for data: {compile_time:.6f} seconds")
+print(f"Uncompilation time for data: {uncompile_time:.6f} seconds")
+print(f"Compilation time for string: {compile_string_time:.6f} seconds")
+print(f"Uncompilation time for string: {uncompile_string_time:.6f} seconds")

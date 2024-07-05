@@ -1,7 +1,7 @@
 import json
 from gliclass import GLiClassModel, ZeroShotClassificationPipeline
 from transformers import AutoTokenizer
-from pplang.compilers import object_to_pplang
+from pplang.compilers import python
 
 types = [
     "Main color",
@@ -77,4 +77,4 @@ def get_colors_and_types_from_text(text, top_k=10):
     # Debug print to check the final result
     print("Top Colors and Types:", top_colors_and_types)
 
-    return object_to_pplang.compile("ui_color_palette_schema", top_colors_and_types)
+    return python.compile("ui_color_palette_schema", top_colors_and_types)

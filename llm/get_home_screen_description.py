@@ -2,7 +2,7 @@ from flask import jsonify
 import logging
 import time
 from transformers import pipeline
-from pplang.compilers import object_to_pplang
+from pplang.compilers import python
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)

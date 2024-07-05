@@ -169,6 +169,28 @@ function getRandomColor() {
   return `rgb(${r}, ${g}, ${b})`
 }
 
+async function python(script) {
+  // Adjust the path to your Python script
+  const pythonProcess = spawn("python", [
+    path.join(__dirname, "script.py"),
+    "arg1",
+    "arg2",
+  ])
+
+  // Handle output from the Python script
+  pythonProcess.stdout.on("data", (data) => {
+    console.log(`stdout: ${data}`)
+  })
+
+  pythonProcess.stderr.on("data", (data) => {
+    console.error(`stderr: ${data}`)
+  })
+
+  pythonProcess.on("close", (code) => {
+    console.log(`child process exited with code ${code}`)
+  })
+}
+
 async function getInventedTextFromImage() {
   const image = captureRegionAroundCursor(robot.getMousePos())
   try {
@@ -191,7 +213,7 @@ async function getHomeScreenDescription() {
       "http://localhost:5000/get_home_screen_description"
     )
     console.log("Home screen description response:", response.data)
-    return response.data.os_home_screen_description
+    return response.data
   } catch (error) {
     console.error("Error getting home screen description:", error)
   }
