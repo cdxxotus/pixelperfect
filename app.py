@@ -8,7 +8,7 @@ import traceback
 from llm.text_to_ui_color_palet import get_colors_and_types_from_text
 from llm.invent_text_from_image import invent_text_from_image
 from llm.get_home_screen_description import get_home_screen_description
-from pplang.compilers import python
+from pplang.compilers.python import main
 
 app = Flask(__name__)
 
@@ -51,7 +51,7 @@ def predict():
         inference_time = end_time - start_time
         logging.info(f"Inference time: {inference_time:.2f} seconds")
  
-        response = python.compile("invented_text_from_image_response", {'invented_text_from_image': generated_texts, 'inference_time': inference_time})
+        response = main.compile("invented_text_from_image_response", {'invented_text_from_image': generated_texts, 'inference_time': inference_time})
         
     except Exception as e:
         logging.error("Error processing request: %s", e)
@@ -74,7 +74,7 @@ def describe_ui():
         print(f"Inference time: {inference_time:.2f} seconds")
 
         # Compile the response
-        response = python.compile("os_home_screen_description_response", {'os_home_screen_description': generated_text, 'inference_time': inference_time})
+        response = main.compile("os_home_screen_description_response", {'os_home_screen_description': generated_text, 'inference_time': inference_time})
     except Exception as e:
         logging.error("Error processing request: %s", e)
         logging.error("Traceback: %s", traceback.format_exc())
@@ -106,7 +106,7 @@ def text_to_color():
         inference_time = end_time - start_time
         logging.info(f"Inference time: {inference_time:.2f} seconds")
 
-        response = python.compile("ui_color_palette_response", {"color_palet": color_palet, 'inference_time': inference_time})
+        response = main.compile("ui_color_palette_response", {"color_palet": color_palet, 'inference_time': inference_time})
         
     except Exception as e:
         logging.error("Error processing request: %s", e)
