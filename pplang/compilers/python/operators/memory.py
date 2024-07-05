@@ -16,18 +16,23 @@ def make():
     }
 
     # Create a unique identifier for the temporary memory space
-    def _create_temp_memory_space(context="œ"):
+    def _create_temp_memory_space(context=context["œ"]):
         unique_id = str(uuid.uuid4())
-        temp_memory_spaces[unique_id] = {}
+        if context:
+            context.temp_memory_spaces[unique_id] = {}
+        else:
+            temp_memory_spaces[unique_id] = {}
         return unique_id
 
     # Create a unique identifier for the application-wide memory space
-    def _create_app_memory_space(context="œ"):
+    def _create_app_memory_space(context=context["œ"]):
         unique_id = str(uuid.uuid4())
-        app_memory_spaces[unique_id] = {}
+        if context:
+            context.app_memory_spaces[unique_id] = {}
+        else:
+            app_memory_spaces[unique_id] = {}
         return unique_id
  
-
     def make_for_admins(self, context=context["œ"]):
         temp_memory_spaces = context.temp_memory_spaces
         app_memory_spaces = context.app_memory_spaces
