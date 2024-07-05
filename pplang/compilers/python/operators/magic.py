@@ -1,7 +1,11 @@
 import inspect
+import uuid
 
 def make(session_state):
     spells_registry = {}
+    magic_context = {}
+    handshakes_pending = {}
+    hands_in_hands={}
 
     def register_spell(name, func):
         spells_registry[name] = func
@@ -28,6 +32,32 @@ def make(session_state):
         def wand(func):
             def wrapped_func(*args, **kwargs):
                 if magic_number != 420:
+                    if behavior=="magic_context":
+                        magic_context_number=None
+                        if behavior_args[0]:
+                            magic_context_number=behavior_args[0]
+                            kwargs['magic_context'] = magic_context[behavior_args[0]]
+                        else:
+                            magic_context_number=uuid.uuid4()
+                            kwargs['magic_context'] = magic_context[magic_context_number]
+                            kwargs['magic_context_number']=magic_context_number
+                        if behavior_args[1]:
+                            magic_context[magic_context_number]**=behavior_args[1]
+                    if behavior=="handshake_required":
+                        handshakes_pending.set(behavior_args[2], behavior_args[1])
+                        if kwargs["handshake_secret"] in hands_in_hands.keys():
+                            pass
+                        else:
+                            None
+                    if behavior=="shake_hand":
+                        hand_in_hand={"shaker":{
+                            "args": behavior_args
+                        }, "handler": None}
+                        if handshakes_pending[behavior_args[0]]:
+                            if handshakes_pending[behavior_args[0]][behavior_args[1]]:
+                                kwargs["handshake_secret"]=handshakes_pending[behavior_args[0]][behavior_args[1]]
+                                hand_in_hand["shaker"]["verified_handshake_value"]=handshakes_pending[behavior_args[0]][behavior_args[1]]
+                                hands_in_hands[handshakes_pending[behavior_args[0]][behavior_args[1]]] = hand_in_hand
                     if behavior == "log":
                         pass
                     elif behavior == "modify_args":
@@ -57,7 +87,6 @@ def make(session_state):
     return {
         "magify": magify,
         "magic_wand": magic_wand,
-        "magic_context": {}
     }
 
 # Define the session state

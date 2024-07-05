@@ -11,9 +11,9 @@ def make(session_state):
     job_lock = Lock()
     worker_lock = Lock()
 
-    @magic(None, "handshake_required", magic.magic_context.memory_handshake, magic.magic_context)
+    @magic(None, "shake_hand", ["handshakes_for_memory_allocation_to_operators", "task"])
     def memory_manager():
-        operator_memory_id=memory.allocate_memory_to_operator()
+        operator_memory_id=memory.allocate_memory_to_operator() ## handshake done, operator allowed to operate memory function
         return
 
     class Job:

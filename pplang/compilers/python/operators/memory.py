@@ -1,9 +1,18 @@
 import uuid
-from compilers.python.operators.magic import magic_wand, magic_context
+from compilers.python.operators.magic import magic_wand
 
-def make():
+def make(**kwargs):
+    
     temp_memory_spaces = {}
     app_memory_spaces = {}
+
+    operators = {
+        "logger": {},
+        "magic": {},
+        "pointers":{},
+        "task":{},
+        "teleport":{}
+    }
 
     context={
         "^": {
@@ -99,8 +108,9 @@ def make():
     os_memory = make_for_admins(context["^"])
     session_memory = make_for_admins()
 
-    magic_context.set("memory_handshake", uuid.uuid4())
-    @magic_wand(None, "handshake_required", magic_context.get("memory_handshake"), magic_context)
+    handshakes_for_memory_allocation_to_operators = {key: str(uuid.uuid4()) for key in operators.keys()}
+    kwargs["magic_context"].set("handshakes_for_memory_allocation_to_operators", handshakes_for_memory_allocation_to_operators)
+    @magic_wand(None, "handshake_required", [kwargs["magic_context"].get("handshakes_for_memory_allocation_to_operators"), len(operators), "handshakes_for_memory_allocation_to_operators"], {"magic_context_number": kwargs["magic_context_number"]})
     def exposed_os_memory_create_app_memory_space():
         return os_memory["create_app_memory_space"]()
 
