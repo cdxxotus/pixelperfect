@@ -2,6 +2,7 @@ import uuid
 from collections import deque
 from threading import Thread, Lock
 from time import sleep
+from compilers.python.operators import magic, memory
 
 def make(session_state):
     job_queue = deque()
@@ -9,6 +10,11 @@ def make(session_state):
     job_status = {}
     job_lock = Lock()
     worker_lock = Lock()
+
+    @magic(None, "handshake_required", magic.magic_context.memory_handshake, magic.magic_context)
+    def memory_manager():
+        operator_memory_id=memory.allocate_memory_to_operator()
+        return
 
     class Job:
         def __init__(self, job_id, data):
@@ -78,7 +84,7 @@ def make(session_state):
     # elif: # request OS constant
     else:
         initialize_workers(42)
-        
+
     return task_manager
 
 # Define the session state

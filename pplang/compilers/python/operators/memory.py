@@ -1,4 +1,5 @@
 import uuid
+from compilers.python.operators.magic import magic_wand, magic_context
 
 def make():
     temp_memory_spaces = {}
@@ -92,14 +93,30 @@ def make():
             "create_app_memory_space": create_app_memory_space
         }
     
-    app_id=_create_app_memory_space(None)
-    temp_memory_space_id=_create_temp_memory_space(None)
+    safe_app_id=_create_app_memory_space(None)
+    safe_temp_memory_space_id=_create_temp_memory_space(None)
 
-    memory = make_for_admins(context["^"])
+    os_memory = make_for_admins(context["^"])
     session_memory = make_for_admins()
+
+    magic_context.set("memory_handshake", uuid.uuid4())
+    @magic_wand(None, "handshake_required", magic_context.get("memory_handshake"), magic_context)
+    def exposed_os_memory_create_app_memory_space():
+        return os_memory["create_app_memory_space"]()
+
+    os_memory_operator_app_id=os_memory["create_app_memory_space"]()
+    os_temp_memory_operator_space_id=os_memory["create_temp_memory_space"]()
+
+    # Function to teleport memory spaces
+    def teleport_memory(space_id, target_context):
+        if space_id in temp_memory_spaces:
+            target_context["temp_memory_spaces"][space_id] = temp_memory_spaces.pop(space_id)
+        elif space_id in app_memory_spaces:
+            target_context["app_memory_spaces"][space_id] = app_memory_spaces.pop(space_id)
 
     return {
         "make_for_admins": make_for_admins,
+        "allocate_memory_to_operator": exposed_os_memory_create_app_memory_space,
         **session_memory
     }
 
@@ -123,6 +140,10 @@ def create_app_memory_space(*args, **kwargs):
 def create_temp_memory_space(*args, **kwargs):
     return memory_for_admins["create_temp_memory_space"](*args, **kwargs)
 
+def allocate_memory_to_operator(*args, **kwargs):
+    return memory["allocate_memory_to_operator"](*args, **kwargs)
+
 # Example usage
 # ------------------------------------------------------------------
-
+# def create_app_memory_space(*args, **kwargs):
+#     return memory["create_app_memory_space"](*args, **kwargs)

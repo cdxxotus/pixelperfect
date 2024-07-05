@@ -57,6 +57,7 @@ def make(session_state):
     return {
         "magify": magify,
         "magic_wand": magic_wand,
+        "magic_context": {}
     }
 
 # Define the session state
