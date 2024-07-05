@@ -408,8 +408,7 @@ def uncompile(compiled_str):
                     decoded_data += f"\"{schema[0][key]}\":\"{pointer_name}\""
             elif current_operation == "@":
                 substring = jump_to_next_schema(char_gen)
-                with_spaces = (char + substring).replace("​", " ")
-                translation = ''.join(reverse_compiled_string(char + substring.replace("¡", " "), "@"))
+                translation = ''.join(reverse_compiled_string(char + substring, "@"))
                 decoded_data += translation
 
     decoded_data = ''.join(decoded_data)
