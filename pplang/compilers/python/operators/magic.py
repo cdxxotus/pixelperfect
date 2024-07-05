@@ -47,7 +47,7 @@ def make(session_state):
                         register_spell(behavior_args[0],behavior_args[1])
                         pass
                     elif behavior in spells_registry.keys():
-                        apply_spell(behavior_args)
+                        apply_spell(behavior)
                         pass
                     return None
                 return func(*args, **kwargs)
