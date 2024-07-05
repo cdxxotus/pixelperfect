@@ -1,50 +1,50 @@
 def make(session_state):
-    def stdout(message, verbosity=None):
-        if verbosity is None:
-            verbosity = session_state["stdout_verbosity_name"]
-        print(f"{verbosity} {''.join(message)}")
-
     def debug(message):
         if session_state["verbosity"] < 0 or session_state["is_verbose"]:
-            stdout(message, "DEBUG")
+            _stdout(message, "DEBUG")
 
     def verbose(message):
-        stdout(message)
+        _stdout(message)
 
     def silent():
         pass
 
     def info(message):
         if session_state["verbosity"] > 0 or session_state["is_verbose"]:
-            stdout(message, "INFO")
+            _stdout(message, "INFO")
 
     def important(message):
         if session_state["verbosity"] > 1 or session_state["is_verbose"]:
-            stdout(message, "IMPORTANT")
+            _stdout(message, "IMPORTANT")
 
     def warning(message):
         if session_state["verbosity"] > 2 or session_state["is_verbose"]:
-            stdout(message, "WARNING")
+            _stdout(message, "WARNING")
 
     def critical(message):
         if session_state["verbosity"] > 3 or session_state["is_verbose"]:
-            stdout(message, "CRITICAL")
+            _stdout(message, "CRITICAL")
 
     def unknown(message, message_verbosity_magic_number=1):
         if session_state["verbosity"] >= message_verbosity_magic_number or session_state["is_verbose"]:
-            stdout(message, "UNKNOWN")
+            _stdout(message, "UNKNOWN")
 
     def private(message):
         if session_state["is_dev_mode"]:
-            stdout(message, "PRIVATE")
+            _stdout(message, "PRIVATE")
 
     def system(message):
         if session_state["is_system"]:
-            stdout(message, "SYSTEM")
+            _stdout(message, "SYSTEM")
 
     def developers(message):
         if session_state["is_dev_mode"]:
-            stdout(message, "@DEV")
+            _stdout(message, "@DEV")
+
+    def _stdout(message, verbosity=None):
+        if verbosity is None:
+            verbosity = session_state["stdout_verbosity_name"]
+        print(f"{verbosity} {''.join(message)}")
 
     # Return a dictionary of functions
     return {
@@ -87,23 +87,23 @@ logger["developers"]("thank you for being here, i hope you appreciate this messa
 # logger["system"]("This is a system message")
 # logger["developers"]("This is a developer message")
 
-def debug():
-    return logger["debug"]
+def debug(*args, **kwargs):
+    return logger["debug"](*args, **kwargs)
 
-def info():
-    return logger["info"]
+def info(*args, **kwargs):
+    return logger["info"](*args, **kwargs)
 
-def important():
-    return logger["important"]
+def important(*args, **kwargs):
+    return logger["important"](*args, **kwargs)
 
-def warning():
-    return logger["warning"]
+def warning(*args, **kwargs):
+    return logger["warning"](*args, **kwargs)
 
-def critical():
-    return logger["critical"]
+def critical(*args, **kwargs):
+    return logger["critical"](*args, **kwargs)
 
-def unknown():
-    return logger["unkonwn"]
+def unknown(*args, **kwargs):
+    return logger["unknown"](*args, **kwargs)
 
-def developers():
-    return logger["developers"]
+def developers(*args, **kwargs):
+    return logger["developers"](*args, **kwargs)
