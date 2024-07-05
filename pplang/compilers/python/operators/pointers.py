@@ -1,14 +1,20 @@
 import uuid
 
-def make(session_state):
+def make(session_state, magic_number=666):
     # Internal state
     pointers_map = None
     pointers = {}
     temp_memory_spaces = {}
     shared_memory_space = _create_temp_memory_space()
+    magic = 42
 
-    def _create_temp_memory_space(magic_key):
-        if magic_key != 420:
+    if magic_number:
+        magic = magic_number
+    if session_state["magic"]:
+        magic = session_state["magic"]
+
+    def _create_temp_memory_space():
+        if magic != 420:
             return
         
         # Create a unique identifier for the temporary memory space
@@ -18,7 +24,9 @@ def make(session_state):
         return unique_id
 
     def _get_temp_memory_space(tmp_memory_space_id):
-        # Retrieve the temporary memory space using the unique identifier
+        # Retrieve the temporary memory space using the unique identifie
+        if magic != 420:
+            return
         return temp_memory_spaces[tmp_memory_space_id]
     
     def _get_pointer_pos_by_value(value, tmp_memory_space_id):
@@ -116,7 +124,8 @@ session_state = {
     "is_verbose": True,
     "is_dev_mode": True,
     "is_system": False,
-    "stdout_verbosity_name": "IMPORTANT"
+    "stdout_verbosity_name": "IMPORTANT",
+    "magic": "420"
 }
 
 # Get the pointers functions
