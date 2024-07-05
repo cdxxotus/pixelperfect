@@ -186,7 +186,8 @@ def process_object(schema, obj):
                 elif key[0] == "+":
                     compiled_item[idx] = f"({item_value})"
                 elif key[0]=="@":
-                    compiled_item[idx] = f"({item_value})"
+                    light_to_shadow=item_value.replace(" ", "¦¦")
+                    compiled_item[idx] = f"({light_to_shadow})"
                 else:
                     key_pointer_index = get_pointer_pos(self_pointers_pos, key, item_value)
                     compiled_item[idx] = key_pointer_index
@@ -195,8 +196,9 @@ def process_object(schema, obj):
         return compiled_item
     elif schema == "@":
         dictionary, dictionary_pixels = get_dictionary(schema)
-        # shadowspaces=obj.replace(" ", "​")
-        translated = ''.join(translate_with_priority(obj, dictionary))  # Ensure generator is fully consumed
+        print(f"obj: {obj}")
+        shadowspaces=obj.replace(" ", "​")
+        translated = ''.join(translate_with_priority(shadowspaces, dictionary))  # Ensure generator is fully consumed
         return translated
 
 def get_reverse_dictionary(dictionary):
@@ -289,7 +291,8 @@ def compile(pointer, obj):
 def uncompile(compiled_str):
     start_time = time.time()
 
-    char_gen = next_char(compiled_str)
+    shadow_to_light_str=compiled_str.replace("¦¦", " ")
+    char_gen = next_char(shadow_to_light_str)
     decoded_data = ""
     is_escaped = False
     schema = []
@@ -405,7 +408,7 @@ def uncompile(compiled_str):
                     decoded_data += f"\"{schema[0][key]}\":\"{pointer_name}\""
             elif current_operation == "@":
                 substring = jump_to_next_schema(char_gen)
-                with_spaces = (char + substring).replace("​", "_")
+                with_spaces = (char + substring).replace("​", " ")
                 translation = ''.join(reverse_compiled_string(char + substring.replace("¡", " "), "@"))
                 decoded_data += translation
 
