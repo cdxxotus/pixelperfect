@@ -291,6 +291,12 @@ def compile(pointer, obj):
 def uncompile(compiled_str):
     start_time = time.time()
 
+    ## 1) get first char: shadow_to_light_str[0]
+    ## 2) make_new_uncompile(0, char, shadow_to_light_str) here
+    ## 3) for pass in new_compilation.pass():
+        ## 4) watch
+
+
     shadow_to_light_str=compiled_str.replace("¦¦", " ")
     char_gen = next_char(shadow_to_light_str)
     decoded_data = ""
