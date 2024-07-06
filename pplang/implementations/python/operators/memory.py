@@ -130,30 +130,16 @@ def make(**kwargs):
         **session_memory
     }
 
-# Define the session state
-session_state = {
-    "verbosity": 2,
-    "is_verbose": True,
-    "is_dev_mode": True,
-    "is_system": False,
-    "stdout_verbosity_name": "IMPORTANT",
-    "magic": "420"
-}
-
-memory=make(session_state)
-memory_for_admins=memory["make_for_admins"]()
-
-# Wrapper functions
-def create_app_memory_space(*args, **kwargs):
-    return memory_for_admins["create_app_memory_space"](*args, **kwargs)
-
-def create_temp_memory_space(*args, **kwargs):
-    return memory_for_admins["create_temp_memory_space"](*args, **kwargs)
-
-def allocate_memory_to_operator(*args, **kwargs):
-    return memory["allocate_memory_to_operator"](*args, **kwargs)
-
 # Example usage
 # ------------------------------------------------------------------
 # def create_app_memory_space(*args, **kwargs):
 #     return memory["create_app_memory_space"](*args, **kwargs)
+#
+# def create_app_memory_space(*args, **kwargs):
+#     return memory_for_admins["create_app_memory_space"](*args, **kwargs)
+
+# def create_temp_memory_space(*args, **kwargs):
+#     return memory_for_admins["create_temp_memory_space"](*args, **kwargs)
+
+# def allocate_memory_to_operator(*args, **kwargs):
+#     return memory["allocate_memory_to_operator"](*args, **kwargs)
