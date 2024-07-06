@@ -15,14 +15,15 @@ The pplang/hard/reserved file contains unicode characters that are tied to the o
 ## Reserved values
 
 ```
-$ indicates next char point to a schema
+€ indicates next char must be treated as a pointer not a logic door
+$ indicates next char points to a schema
 [ indicates we are defining a list/array and next char point to its type
 ] indicates we completed the definition of a list/array
 | indicates we completed the definition of a value and start defining another one
 , indicates we completed the definition of an abject and we start defining another one
-- indicates next char point to a state
+- indicates next char points to a state
 * indicates next value is of 'compiled with pplang' type
-+ indicates next char point to a constant
++ indicates next char points to a constant
 { indicates we are defining an object and next char point to its type
 } indicates we completed the definition of an object
 ( indicates next chars until ')' is a raw value
