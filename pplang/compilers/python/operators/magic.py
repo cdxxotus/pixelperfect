@@ -56,11 +56,11 @@ def make(session_state):
                         # }, "handler": None}
                         if handshakes_pending[behavior_args[0]]:
                             if handshakes_pending[behavior_args[0]][behavior_args[1]]:
-                                handshakd_secret_dict={} if not kwargs["handshake_secret"] else kwargs["handshake_secret"]
-                                handshakd_secret_dict.set(behavior_args[0], handshakes_pending[behavior_args[0]][behavior_args[1]])
+                                handshake_secret_dict={} if not kwargs["handshake_secret"] else kwargs["handshake_secret"]
+                                handshake_secret_dict.set(behavior_args[0], handshakes_pending[behavior_args[0]][behavior_args[1]])
                                 # hand_in_hand["shaker"]["verified_handshake_value"]=handshakes_pending[behavior_args[0]][behavior_args[1]]
                                 # hands_in_hands[handshakes_pending[behavior_args[0]][behavior_args[1]]] = hand_in_hand
-                                kwargs["handshake_secret"] = handshakd_secret_dict
+                                kwargs["handshake_secret"] = handshake_secret_dict
                     if behavior == "log":
                         pass
                     elif behavior == "modify_args":
