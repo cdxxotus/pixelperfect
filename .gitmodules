@@ -1,3 +1,6 @@
 [submodule "0-bytes"]
 	path = 0-bytes
 	url = git@github.com:danielfebrero/0-bytes.git
+[submodule "pplang/operating-system"]
+	path = pplang/operating-system
+	url = git@github.com:O-bytes/operating-system.git
